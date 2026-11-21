@@ -1,0 +1,2646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Éxor Perfumaria | Gestão de Estoque, Investimento & Precificação</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Cormorant Garamond', 'serif'],
+          },
+          colors: {
+            lavender: {
+              50: '#FAF8FF',
+              100: '#F3EFFB',
+              200: '#E5DDF7',
+              300: '#D1C1F0',
+              400: '#B296E6',
+              500: '#8B72D6',
+              600: '#7256C2',
+            },
+            wine: {
+              700: '#7A2048',
+              800: '#581C3E',
+              900: '#3D102A',
+              950: '#2A121F',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #FAF8FF;
+      color: #2A121F;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F3EFFB;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D1C1F0;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #581C3E;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased selection:bg-lavender-300/40 selection:text-wine-950">
+
+  <!-- Toast de Notificação -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Cabeçalho -->
+  <header class="bg-wine-800 text-lavender-50 border-b border-wine-900 sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 gap-3">
+        <!-- Marca -->
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-2xl bg-wine-900 border border-lavender-400/30 text-lavender-200 flex items-center justify-center shadow-inner shrink-0">
+            <!-- Ícone Frasco Botânico SVG -->
+            <svg class="w-6 h-6 text-lavender-300" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6m-5 0v2.5M14 3v2.5M8 5.5h8v2H8v-2zM7 9.5A2.5 2.5 0 019.5 7h5A2.5 2.5 0 0117 9.5v9a2.5 2.5 0 01-2.5 2.5h-5A2.5 2.5 0 017 18.5v-9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c-1.5 1.5-1.5 3.5 0 5 1.5-1.5 1.5-3.5 0-5z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-white leading-none">Éxor Perfumaria</h1>
+            <p class="text-xs text-lavender-200/90 mt-1">Gestão de Estoque, Investimento & Precificação</p>
+          </div>
+        </div>
+
+        <!-- Ações de Backup / Dados -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="exportBackup()" title="Baixar backup em JSON" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-lavender-100 bg-wine-900/80 hover:bg-wine-900 border border-lavender-400/25 rounded-xl transition">
+            <svg class="w-4 h-4 text-lavender-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Exportar Backup
+          </button>
+          <label title="Restaurar backup JSON" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-lavender-100 bg-wine-900/80 hover:bg-wine-900 border border-lavender-400/25 rounded-xl transition">
+            <svg class="w-4 h-4 text-lavender-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Importar
+            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importBackup(event)">
+          </label>
+          <button onclick="openResetModal()" title="Gerenciar dados" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-lavender-200 hover:text-white hover:bg-wine-700 rounded-xl transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Dados
+          </button>
+          <button onclick="openCloudModal()" id="btn-cloud-status" title="Configurar sincronização na nuvem" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-lavender-100 bg-wine-900/80 hover:bg-wine-900 border border-lavender-400/25 rounded-xl transition">
+            <span id="cloud-status-dot" class="w-2 h-2 rounded-full bg-lavender-300"></span>
+            <span id="cloud-status-label">Modo Local</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navegação por Abas -->
+      <nav class="flex gap-1 sm:gap-2 overflow-x-auto pb-0 -mb-px" aria-label="Abas principais">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-lavender-300 text-white flex items-center gap-2 transition">
+          <svg class="w-4 h-4 text-lavender-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          Visão Geral
+        </button>
+        <button onclick="switchTab('insumos')" id="tab-insumos" class="nav-tab whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-transparent text-lavender-200 hover:text-white hover:border-lavender-400/50 flex items-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          Estoque de Insumos
+          <span id="badge-total-insumos" class="bg-wine-900 text-lavender-200 text-xs px-2 py-0.5 rounded-full font-semibold">0</span>
+        </button>
+        <button onclick="switchTab('precificacao')" id="tab-precificacao" class="nav-tab whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-transparent text-lavender-200 hover:text-white hover:border-lavender-400/50 flex items-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          Precificação & Ficha Técnica
+        </button>
+        <button onclick="switchTab('pronta-entrega')" id="tab-pronta-entrega" class="nav-tab whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-transparent text-lavender-200 hover:text-white hover:border-lavender-400/50 flex items-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+          Perfumes Pronta Entrega
+          <span id="badge-pronta-entrega" class="bg-lavender-200 text-wine-900 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+        </button>
+        <button onclick="switchTab('vendas')" id="tab-vendas" class="nav-tab whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-transparent text-lavender-200 hover:text-white hover:border-lavender-400/50 flex items-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+          Vendas & Retorno
+          <span id="badge-vendas" class="bg-wine-900 text-lavender-200 text-xs px-2 py-0.5 rounded-full font-semibold">0</span>
+        </button>
+        <button onclick="switchTab('reposicao')" id="tab-reposicao" class="nav-tab whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-transparent text-lavender-200 hover:text-white hover:border-lavender-400/50 flex items-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          Reposição
+          <span id="badge-reposicao" class="bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- ================= ABA 1: VISÃO GERAL (DASHBOARD) ================= -->
+    <section id="view-dashboard" class="space-y-6">
+      <!-- KPIs Principais -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Card 1: Total Já Investido -->
+        <div class="bg-white rounded-2xl p-5 border border-lavender-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-wine-700">Total Já Investido</p>
+              <h2 id="kpi-total-investido" class="text-2xl sm:text-3xl font-bold text-wine-950 mt-1.5">R$ 0,00</h2>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-lavender-100 text-wine-800 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-lavender-100 flex items-center justify-between text-xs text-wine-950/75">
+            <span>Capital acumulado em compras</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Capital Imobilizado Atual (Insumos + Pronta Entrega) -->
+        <div class="bg-white rounded-2xl p-5 border border-lavender-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-wine-700">Estoque Atual (Custo)</p>
+              <h2 id="kpi-valor-estoque-total" class="text-2xl sm:text-3xl font-bold text-wine-950 mt-1.5">R$ 0,00</h2>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-lavender-100 text-lavender-600 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-lavender-100 flex items-center justify-between text-xs text-wine-950/75">
+            <span>Insumos: <strong id="kpi-sub-insumos" class="text-wine-900">R$ 0,00</strong></span>
+            <span>Prontos: <strong id="kpi-sub-prontos" class="text-wine-900">R$ 0,00</strong></span>
+          </div>
+        </div>
+
+        <!-- Card 3: Perfumes Pronta Entrega -->
+        <div class="bg-white rounded-2xl p-5 border border-lavender-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-wine-700">Perfumes Pronta Entrega</p>
+              <div class="flex items-baseline gap-2 mt-1.5">
+                <h2 id="kpi-qtd-pronta-entrega" class="text-2xl sm:text-3xl font-bold text-wine-950">0</h2>
+                <span class="text-xs text-wine-950/75">frascos prontos</span>
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-lavender-100 flex items-center justify-between text-xs text-wine-950/75">
+            <span>Venda potencial: <strong id="kpi-valor-venda-potencial" class="text-emerald-800">R$ 0,00</strong></span>
+            <span>Lucro est.: <strong id="kpi-lucro-projetado" class="text-wine-800">R$ 0,00</strong></span>
+          </div>
+        </div>
+
+        <!-- Card 4: Alertas de Reposição -->
+        <div class="bg-white rounded-2xl p-5 border border-lavender-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-wine-700">Alertas de Reposição</p>
+              <div class="flex items-baseline gap-2 mt-1.5">
+                <h2 id="kpi-qtd-reposicao" class="text-2xl sm:text-3xl font-bold text-rose-700">0</h2>
+                <span class="text-xs text-wine-950/75">itens abaixo do mín.</span>
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-lavender-100 flex items-center justify-between text-xs text-wine-950/75">
+            <span>Est. p/ repor mínimo:</span>
+            <span id="kpi-custo-reposicao" class="font-bold text-rose-700">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalhamento Financeiro por Categoria (As 5 categorias + Pronta Entrega) -->
+      <div class="bg-white rounded-2xl border border-lavender-200 shadow-sm p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+          <div>
+            <h3 class="font-serif text-2xl font-bold text-wine-900">Visão Ampla do Capital por Categoria</h3>
+            <p class="text-xs text-wine-950/75">Quanto já foi investido e quanto está imobilizado hoje em cada etapa da produção</p>
+          </div>
+          <button onclick="switchTab('precificacao')" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-lavender-100 hover:bg-lavender-200 text-wine-900 rounded-xl transition self-start">
+            Abrir Calculadora de Precificação →
+          </button>
+        </div>
+
+        <div id="dashboard-categorias-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Preenchido via JS -->
+        </div>
+      </div>
+
+      <!-- Grid Secundário do Dashboard -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Lista Rápida de Reposição Urgente -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-lavender-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="p-5 border-b border-lavender-200 flex items-center justify-between bg-lavender-50">
+            <div>
+              <h3 class="font-serif text-xl font-bold text-wine-900">Insumos que Precisam de Reposição</h3>
+              <p class="text-xs text-wine-950/75">Itens que atingiram ou estão abaixo do estoque de segurança</p>
+            </div>
+            <button onclick="switchTab('reposicao')" class="text-xs font-semibold text-wine-800 hover:text-lavender-600 underline underline-offset-4">
+              Ver lista de compras →
+            </button>
+          </div>
+          <div id="dashboard-reposicao-list" class="divide-y divide-lavender-100 flex-1">
+            <!-- Preenchido via JS -->
+          </div>
+        </div>
+
+        <!-- Vitrine Perfumes Pronta Entrega -->
+        <div class="bg-wine-800 text-lavender-50 rounded-2xl shadow-sm p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-serif text-xl font-bold text-lavender-200">Perfumes Pronta Entrega</h3>
+              <button onclick="switchTab('pronta-entrega')" class="text-xs text-lavender-200 hover:text-white underline">Gerenciar</button>
+            </div>
+            <div id="dashboard-pronta-list" class="space-y-3 text-sm">
+              <!-- Preenchido via JS -->
+            </div>
+          </div>
+          <div class="mt-5 pt-4 border-t border-wine-700 space-y-2">
+            <div class="flex items-center justify-between text-xs text-lavender-200">
+              <span>Faturamento realizado:</span>
+              <strong id="dash-faturamento-real" class="text-emerald-300">R$ 0,00</strong>
+            </div>
+            <div class="flex items-center justify-between text-xs text-lavender-200 pb-1">
+              <span>Recuperação do capital:</span>
+              <strong id="dash-roi-capital" class="text-white">0%</strong>
+            </div>
+            <button onclick="switchTab('precificacao')" class="w-full py-2.5 px-4 bg-lavender-300 hover:bg-lavender-200 text-wine-950 font-semibold text-xs rounded-xl transition">
+              + Precificar ou Produzir Novo Lote
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ABA 2: GESTÃO DE INSUMOS ================= -->
+    <section id="view-insumos" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl sm:text-3xl font-bold text-wine-900">Estoque de Insumos & Materiais</h2>
+          <p class="text-sm text-wine-950/75">Matéria-prima, bases, embalagens, itens de produção e materiais de envio.</p>
+        </div>
+        <button onclick="openInsumoModal()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-wine-800 hover:bg-wine-900 text-white text-sm font-medium rounded-xl shadow-sm transition">
+          <svg class="w-5 h-5 text-lavender-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Novo Insumo
+        </button>
+      </div>
+
+      <!-- Barra de Filtros -->
+      <div class="bg-white p-4 rounded-2xl border border-lavender-200 shadow-sm flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <svg class="w-4 h-4 text-wine-800/60 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" id="search-insumo" oninput="renderInsumos()" placeholder="Buscar por nome, subtipo (ex: óleo essencial, resina) ou fornecedor..." class="w-full pl-10 pr-4 py-2 text-sm bg-lavender-50 border border-lavender-200 rounded-xl focus:outline-none focus:border-wine-800">
+        </div>
+        <select id="filter-categoria" onchange="renderInsumos()" class="px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-200 rounded-xl focus:outline-none focus:border-wine-800 text-wine-950">
+          <option value="Todas">Todas as Categorias</option>
+          <option value="Matéria-prima">Matéria-prima (Óleos, Resinas, Ervas)</option>
+          <option value="Bases">Bases (Álcool, Óleos Vegetais)</option>
+          <option value="Embalagens">Embalagens</option>
+          <option value="Outros itens de produção">Outros itens de produção</option>
+          <option value="Envio">Envio</option>
+        </select>
+        <select id="filter-status" onchange="renderInsumos()" class="px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-200 rounded-xl focus:outline-none focus:border-wine-800 text-wine-950">
+          <option value="Todos">Todos os Status</option>
+          <option value="OK">Estoque OK</option>
+          <option value="Baixo">Baixo Estoque</option>
+          <option value="Crítico">Crítico / Zerado</option>
+        </select>
+      </div>
+
+      <!-- Tabela Responsiva de Insumos -->
+      <div class="bg-white rounded-2xl border border-lavender-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-lavender-100/80 border-b border-lavender-200 text-xs font-semibold uppercase tracking-wider text-wine-900">
+                <th class="py-3.5 px-4">Insumo / Subtipo</th>
+                <th class="py-3.5 px-4">Categoria</th>
+                <th class="py-3.5 px-4 text-right">Estoque Atual</th>
+                <th class="py-3.5 px-4 text-right">Mínimo</th>
+                <th class="py-3.5 px-4 text-right">Custo Unit.</th>
+                <th class="py-3.5 px-4 text-right">Valor em Estoque</th>
+                <th class="py-3.5 px-4 text-center">Status</th>
+                <th class="py-3.5 px-4 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-insumos-body" class="divide-y divide-lavender-100 text-sm">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ABA 3: PRECIFICAÇÃO & FICHA TÉCNICA ================= -->
+    <section id="view-precificacao" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl sm:text-3xl font-bold text-wine-900">Precificação & Ficha Técnica</h2>
+          <p class="text-sm text-wine-950/75">Monte a composição com os insumos do estoque para descobrir o custo real e o preço de venda ideal.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <select id="precif-select-produto" onchange="carregarFichaTecnica(this.value)" class="px-3.5 py-2 text-sm font-medium bg-white border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800 text-wine-950">
+            <option value="">+ Nova Simulação / Receita Avulsa</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Coluna Esquerda: Composição da Fórmula / Embalagem (7 colunas) -->
+        <div class="lg:col-span-7 space-y-5">
+          <div class="bg-white rounded-2xl border border-lavender-200 shadow-sm p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-lavender-100 pb-3">
+              <h3 class="font-serif text-xl font-bold text-wine-900">1. Composição do Perfume (por 1 unidade)</h3>
+              <span class="text-xs text-wine-800 bg-lavender-100 px-2.5 py-1 rounded-full font-medium">Custos sincronizados com estoque</span>
+            </div>
+
+            <!-- Adicionar Insumo na Receita -->
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 bg-lavender-50 p-3.5 rounded-xl border border-lavender-200">
+              <div class="sm:col-span-7">
+                <label class="block text-[11px] font-semibold uppercase tracking-wider text-wine-800 mb-1">Selecionar Insumo do Estoque</label>
+                <select id="precif-add-insumo" class="w-full px-3 py-2 text-sm bg-white border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+                  <!-- Preenchido via JS -->
+                </select>
+              </div>
+              <div class="sm:col-span-3">
+                <label class="block text-[11px] font-semibold uppercase tracking-wider text-wine-800 mb-1">Qtd. p/ 1 Frasco</label>
+                <input type="number" step="0.01" min="0.01" id="precif-add-qtd" placeholder="Ex: 10" class="w-full px-3 py-2 text-sm bg-white border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+              </div>
+              <div class="sm:col-span-2 flex items-end">
+                <button type="button" onclick="adicionarItemReceita()" class="w-full py-2 px-3 bg-wine-800 hover:bg-wine-900 text-white text-sm font-medium rounded-xl transition">
+                  + Incluir
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista de Itens na Ficha Técnica -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-lavender-200 text-[11px] font-semibold uppercase tracking-wider text-wine-800">
+                    <th class="py-2.5 px-2">Insumo</th>
+                    <th class="py-2.5 px-2">Categoria</th>
+                    <th class="py-2.5 px-2 text-right">Qtd. Usada</th>
+                    <th class="py-2.5 px-2 text-right">Custo na Fórmula</th>
+                    <th class="py-2.5 px-2 text-right"></th>
+                  </tr>
+                </thead>
+                <tbody id="precif-tabela-itens" class="divide-y divide-lavender-100 text-sm">
+                  <!-- Preenchido via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Resumo de Custos Diretos -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-lavender-200 text-xs">
+              <div class="bg-lavender-50 p-3 rounded-xl flex flex-col justify-between">
+                <span class="text-wine-950/80">Matéria-prima + Bases:</span>
+                <strong id="precif-custo-formula" class="text-sm text-wine-900 mt-1">R$ 0,00</strong>
+              </div>
+              <div class="bg-lavender-50 p-3 rounded-xl flex flex-col justify-between">
+                <span class="text-wine-950/80">Perda / Evaporação:</span>
+                <strong id="precif-custo-perda" class="text-sm text-wine-800 mt-1">R$ 0,00</strong>
+              </div>
+              <div class="bg-lavender-50 p-3 rounded-xl flex flex-col justify-between">
+                <span class="text-wine-950/80">Embalagens + Outros + Envio:</span>
+                <strong id="precif-custo-embalagem" class="text-sm text-wine-900 mt-1">R$ 0,00</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ação de Produção de Lote -->
+          <div id="box-producao-lote" class="bg-lavender-100/80 border border-lavender-300 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h4 class="font-serif text-lg font-bold text-wine-900">Produzir Lote e Dar Baixa no Estoque</h4>
+              <p class="text-xs text-wine-950/80 mt-0.5">Desconta os insumos desta receita do estoque e adiciona os frascos prontos em Pronta Entrega.</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+              <input type="number" id="lote-qtd-produzir" min="1" step="1" value="5" class="w-20 px-3 py-2 text-sm font-bold text-center bg-white border border-lavender-300 rounded-xl">
+              <button onclick="produzirLote()" class="flex-1 sm:flex-initial px-4 py-2 bg-wine-800 hover:bg-wine-900 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                Produzir Frascos
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna Direita: Simulador de Preço de Venda (5 colunas) -->
+        <div class="lg:col-span-5">
+          <div class="bg-white rounded-2xl border border-lavender-200 shadow-sm p-5 space-y-4 sticky top-28">
+            <div class="border-b border-lavender-100 pb-3">
+              <h3 class="font-serif text-xl font-bold text-wine-900">2. Formação do Preço de Venda</h3>
+              <p class="text-xs text-wine-950/75">Ajuste margens, taxas e custos indiretos para definir o valor final</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-wine-900 mb-1">Perda / Maceração (%)</label>
+                <input type="number" id="precif-perda" value="4" min="0" max="60" step="0.5" oninput="recalcularPrecificacao()" class="w-full px-3 py-2 text-sm bg-lavender-50 border border-lavender-200 rounded-xl focus:outline-none focus:border-wine-800">
+                <span class="text-[10px] text-wine-950/65">Aplica-se à fórmula e bases</span>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-wine-900 mb-1">Margem de Lucro (%)</label>
+                <input type="number" id="precif-margem" value="55" min="0" max="95" step="1" oninput="recalcularPrecificacao()" class="w-full px-3 py-2 text-sm bg-lavender-50 border border-lavender-200 rounded-xl focus:outline-none focus:border-wine-800">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-wine-900 mb-1">Taxas Cartão/Site (%)</label>
+                <input type="number" id="precif-taxas" value="6" min="0" max="50" step="0.5" oninput="recalcularPrecificacao()" class="w-full px-3 py-2 text-sm bg-lavender-50 border border-lavender-200 rounded-xl focus:outline-none focus:border-wine-800">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-wine-900 mb-1">Impostos / Comissão (%)</label>
+                <input type="number" id="precif-impostos" value="4" min="0" max="50" step="0.5" oninput="recalcularPrecificacao()" class="w-full px-3 py-2 text-sm bg-lavender-50 border border-lavender-200 rounded-xl focus:outline-none focus:border-wine-800">
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-semibold text-wine-900 mb-1">Mão de Obra / Rateio Fixo por Frasco (R$)</label>
+                <input type="number" id="precif-rateio" value="8.00" min="0" step="0.50" oninput="recalcularPrecificacao()" class="w-full px-3 py-2 text-sm bg-lavender-50 border border-lavender-200 rounded-xl focus:outline-none focus:border-wine-800">
+              </div>
+            </div>
+
+            <!-- Resultado Destacado em Vinho & Lavanda -->
+            <div class="bg-wine-800 text-white rounded-2xl p-5 space-y-3">
+              <div class="flex justify-between items-center text-xs text-lavender-200">
+                <span>Custo Total Unitário (CMV + Fixo):</span>
+                <span id="precif-custo-total-unit" class="font-bold text-white text-sm">R$ 0,00</span>
+              </div>
+              <div class="pt-2 border-t border-wine-700 flex items-baseline justify-between">
+                <div>
+                  <span class="text-xs uppercase tracking-wider text-lavender-200 block font-semibold">Preço de Venda Sugerido</span>
+                  <span id="precif-markup-info" class="text-[11px] text-lavender-300">Markup: 0.0x</span>
+                </div>
+                <span id="precif-preco-sugerido" class="text-3xl font-bold text-lavender-100">R$ 0,00</span>
+              </div>
+              <div class="pt-2 border-t border-wine-700 flex justify-between items-center text-xs">
+                <span class="text-lavender-200">Lucro Líquido Estimado / Frasco:</span>
+                <span id="precif-lucro-liquido" class="font-bold text-emerald-300 text-sm">R$ 0,00</span>
+              </div>
+            </div>
+
+            <!-- Salvar no Produto ou Criar Novo Perfume -->
+            <div class="pt-1 space-y-2">
+              <button onclick="aplicarPrecoNoProduto()" class="w-full py-2.5 px-4 bg-lavender-600 hover:bg-wine-900 text-white text-sm font-semibold rounded-xl shadow-sm transition">
+                Salvar Custo & Preço no Perfume
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ABA 4: PRODUTOS PRONTA ENTREGA ================= -->
+    <section id="view-pronta-entrega" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl sm:text-3xl font-bold text-wine-900">Perfumes Pronta Entrega</h2>
+          <p class="text-sm text-wine-950/75">Fragrâncias finalizadas, maceradas e disponíveis para venda imediata.</p>
+        </div>
+        <button onclick="openProdutoModal()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-wine-800 hover:bg-wine-900 text-white text-sm font-medium rounded-xl shadow-sm transition">
+          <svg class="w-5 h-5 text-lavender-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Novo Perfume Finalizado
+        </button>
+      </div>
+
+      <!-- Cards de Produtos Pronta Entrega -->
+      <div id="grid-pronta-entrega" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
+    <!-- ================= ABA 4.5: VENDAS & RETORNO FINANCEIRO ================= -->
+    <section id="view-vendas" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl sm:text-3xl font-bold text-wine-900">Histórico de Vendas & Retorno Financeiro</h2>
+          <p class="text-sm text-wine-950/75">Acompanhe o faturamento realizado, o lucro estimado das vendas e o retorno sobre o capital investido.</p>
+        </div>
+        <button onclick="openVendaModal()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-wine-800 hover:bg-wine-900 text-white text-sm font-medium rounded-xl shadow-sm transition">
+          <svg class="w-5 h-5 text-lavender-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Registrar Venda
+        </button>
+      </div>
+
+      <!-- KPIs Financeiros de Vendas -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-5 border border-lavender-200 shadow-sm">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-wine-700">Faturamento Realizado</p>
+          <h3 id="vendas-kpi-faturamento" class="text-2xl font-bold text-wine-950 mt-1.5">R$ 0,00</h3>
+          <p class="text-xs text-wine-950/70 mt-2"><span id="vendas-kpi-frascos">0</span> frascos vendidos</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-lavender-200 shadow-sm">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-wine-700">Lucro Estimado Realizado</p>
+          <h3 id="vendas-kpi-lucro" class="text-2xl font-bold text-emerald-700 mt-1.5">R$ 0,00</h3>
+          <p class="text-xs text-wine-950/70 mt-2">Faturamento menos custo unitário</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-lavender-200 shadow-sm">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-wine-700">Recuperação do Capital</p>
+          <h3 id="vendas-kpi-recuperacao" class="text-2xl font-bold text-wine-800 mt-1.5">0%</h3>
+          <p class="text-xs text-wine-950/70 mt-2">Faturamento vs. Total já investido</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-lavender-200 shadow-sm">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-wine-700">Saldo vs. Investimento</p>
+          <h3 id="vendas-kpi-saldo" class="text-2xl font-bold text-wine-950 mt-1.5">R$ 0,00</h3>
+          <p class="text-xs text-wine-950/70 mt-2">Faturamento menos total investido</p>
+        </div>
+      </div>
+
+      <!-- Tabela do Histórico de Vendas -->
+      <div class="bg-white rounded-2xl border border-lavender-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-lavender-200 bg-lavender-50 flex items-center justify-between">
+          <h3 class="font-serif text-xl font-bold text-wine-900">Registro de Vendas Realizadas</h3>
+          <span class="text-xs text-wine-950/70">Vendas pelo botão "-1 Venda" entram aqui automaticamente</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-lavender-100/80 border-b border-lavender-200 text-xs font-semibold uppercase tracking-wider text-wine-900">
+                <th class="py-3.5 px-4">Data / Hora</th>
+                <th class="py-3.5 px-4">Perfume</th>
+                <th class="py-3.5 px-4 text-right">Qtd.</th>
+                <th class="py-3.5 px-4 text-right">Valor Unit.</th>
+                <th class="py-3.5 px-4 text-right">Total Venda</th>
+                <th class="py-3.5 px-4 text-right">Lucro Est.</th>
+                <th class="py-3.5 px-4 text-right">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-vendas-body" class="divide-y divide-lavender-100 text-sm">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ABA 5: LISTA DE COMPRAS / REPOSIÇÃO ================= -->
+    <section id="view-reposicao" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl sm:text-3xl font-bold text-wine-900">Lista de Compras & Reposição</h2>
+          <p class="text-sm text-wine-950/75">Insumos e materiais de envio com estoque atual igual ou inferior ao mínimo definido.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="copiarListaCompras()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-wine-800 hover:bg-wine-900 text-white text-sm font-medium rounded-xl shadow-sm transition">
+            <svg class="w-4 h-4 text-lavender-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+            Copiar Lista para Fornecedor
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumo do Orçamento de Reposição -->
+      <div class="bg-lavender-100 border border-lavender-300 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-wine-900">Orçamento Estimado desta Reposição</p>
+          <p class="text-xs text-wine-950/80 mt-0.5">Ajuste as quantidades desejadas na tabela abaixo para simular o pedido.</p>
+        </div>
+        <div class="text-left sm:text-right">
+          <span id="orcamento-total-reposicao" class="text-3xl font-bold text-wine-900">R$ 0,00</span>
+        </div>
+      </div>
+
+      <!-- Tabela de Reposição -->
+      <div class="bg-white rounded-2xl border border-lavender-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-lavender-100/80 border-b border-lavender-200 text-xs font-semibold uppercase tracking-wider text-wine-900">
+                <th class="py-3.5 px-4">Insumo / Fornecedor</th>
+                <th class="py-3.5 px-4 text-right">Atual / Mínimo</th>
+                <th class="py-3.5 px-4 text-right">Custo Unit. Ref.</th>
+                <th class="py-3.5 px-4 text-center">Qtd. a Comprar</th>
+                <th class="py-3.5 px-4 text-right">Subtotal</th>
+                <th class="py-3.5 px-4 text-right">Ação Rápida</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-reposicao-body" class="divide-y divide-lavender-100 text-sm">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="border-t border-lavender-200 bg-white/80 py-4 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-wine-950/75 gap-2">
+      <span><strong>Éxor Perfumaria</strong> • Dados salvos automaticamente no seu navegador</span>
+      <span id="footer-stats"></span>
+    </div>
+  </footer>
+
+  <!-- ================= MODAIS ================= -->
+
+  <!-- Modal Cadastro / Edição de Insumo -->
+  <div id="modal-insumo" class="fixed inset-0 z-50 hidden bg-wine-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-lavender-200 shadow-xl overflow-hidden max-h-[92vh] overflow-y-auto">
+      <div class="px-6 py-4 bg-wine-800 text-white flex items-center justify-between">
+        <h3 id="modal-insumo-title" class="font-serif text-2xl font-bold">Cadastrar Insumo</h3>
+        <button onclick="closeModal('modal-insumo')" class="text-lavender-200 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="form-insumo" onsubmit="saveInsumo(event)" class="p-6 space-y-4">
+        <input type="hidden" id="insumo-id">
+        
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Nome do Insumo *</label>
+          <input type="text" id="insumo-nome" required placeholder="Ex: Óleo Essencial Lavanda Francesa, Álcool de Cereais..." class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Categoria *</label>
+            <select id="insumo-categoria" required onchange="atualizarSugestaoSubtipo()" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+              <option value="Matéria-prima">Matéria-prima</option>
+              <option value="Bases">Bases</option>
+              <option value="Embalagens">Embalagens</option>
+              <option value="Outros itens de produção">Outros itens de produção</option>
+              <option value="Envio">Envio</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Subtipo / Especificação</label>
+            <input type="text" id="insumo-subtipo" list="lista-subtipos" placeholder="Ex: Óleos essenciais, Resinas..." class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+            <datalist id="lista-subtipos">
+              <option value="Óleos essenciais">
+              <option value="Óleos vegetais">
+              <option value="Resinas">
+              <option value="Ervas">
+              <option value="Álcool de cereais">
+              <option value="Frascos e válvulas">
+              <option value="Rótulos e caixas">
+              <option value="Utensílios / Filtros">
+              <option value="Caixa e proteção de envio">
+            </datalist>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Unidade *</label>
+            <select id="insumo-unidade" required class="w-full px-3 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+              <option value="ml">ml</option>
+              <option value="g">g</option>
+              <option value="un">un</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Qtd. Atual *</label>
+            <input type="number" step="0.01" min="0" id="insumo-qtd" required oninput="recalcInsumoForm()" placeholder="0" class="w-full px-3 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Mínimo *</label>
+            <input type="number" step="0.01" min="0" id="insumo-minimo" required placeholder="0" class="w-full px-3 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          </div>
+        </div>
+
+        <!-- Modo de Cálculo de Custo -->
+        <div class="bg-lavender-50 p-3.5 rounded-xl border border-lavender-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-wine-900">Informar custo por:</span>
+            <div class="flex gap-3 text-xs">
+              <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" name="modo-custo" value="lote" checked onchange="toggleModoCusto()" class="text-wine-800 focus:ring-wine-800">
+                <span>Valor Total do Lote</span>
+              </label>
+              <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" name="modo-custo" value="unitario" onchange="toggleModoCusto()" class="text-wine-800 focus:ring-wine-800">
+                <span>Custo Unitário</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div id="box-custo-lote">
+              <label class="block text-xs text-wine-950/80 mb-1">Valor Pago no Lote (R$)</label>
+              <input type="number" step="0.01" min="0" id="insumo-custo-lote" oninput="recalcInsumoForm()" placeholder="Ex: 120.00" class="w-full px-3 py-1.5 text-sm bg-white border border-lavender-300 rounded-lg focus:outline-none focus:border-wine-800">
+            </div>
+            <div>
+              <label class="block text-xs text-wine-950/80 mb-1">Custo Unitário (R$ / un, ml, g)</label>
+              <input type="number" step="0.0001" min="0" id="insumo-custo-unit" required oninput="recalcInsumoForm(true)" placeholder="0.00" class="w-full px-3 py-1.5 text-sm bg-white border border-lavender-300 rounded-lg focus:outline-none focus:border-wine-800">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Fornecedor (Opcional)</label>
+          <input type="text" id="insumo-fornecedor" placeholder="Ex: Terra Flor, Destilaria Botânica..." class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-lavender-100">
+          <button type="button" onclick="closeModal('modal-insumo')" class="px-4 py-2 text-sm font-medium text-wine-900 hover:bg-lavender-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-sm font-medium bg-wine-800 hover:bg-wine-900 text-white rounded-xl shadow-sm transition">Salvar Insumo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Registrar Entrada / Compra de Insumo -->
+  <div id="modal-entrada" class="fixed inset-0 z-50 hidden bg-wine-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-lavender-200 shadow-xl overflow-hidden">
+      <div class="px-6 py-4 bg-wine-800 text-white flex items-center justify-between">
+        <h3 class="font-serif text-2xl font-bold">Registrar Compra / Entrada</h3>
+        <button onclick="closeModal('modal-entrada')" class="text-lavender-200 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form onsubmit="saveEntradaCompra(event)" class="p-6 space-y-4">
+        <input type="hidden" id="entrada-insumo-id">
+        <div class="bg-lavender-100 p-3.5 rounded-xl">
+          <p class="text-xs text-wine-800">Insumo selecionado:</p>
+          <p id="entrada-insumo-nome" class="font-bold text-wine-950 text-base mt-0.5"></p>
+          <p id="entrada-estoque-atual" class="text-xs text-wine-900/80 mt-1"></p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Quantidade Comprada (<span id="entrada-unidade-label"></span>) *</label>
+          <input type="number" step="0.01" min="0.01" id="entrada-qtd" required placeholder="Ex: 100" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Valor Total Pago nesta Compra (R$) *</label>
+          <input type="number" step="0.01" min="0" id="entrada-valor-total" required placeholder="Ex: 95.00" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          <p class="text-[11px] text-wine-950/75 mt-1">Este valor será somado ao Total Já Investido e recalculará o custo médio unitário.</p>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-lavender-100">
+          <button type="button" onclick="closeModal('modal-entrada')" class="px-4 py-2 text-sm font-medium text-wine-900 hover:bg-lavender-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-sm font-medium bg-wine-800 hover:bg-wine-900 text-white rounded-xl shadow-sm transition">Confirmar Entrada</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Cadastro / Edição de Produto Pronta Entrega -->
+  <div id="modal-produto" class="fixed inset-0 z-50 hidden bg-wine-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-lavender-200 shadow-xl overflow-hidden">
+      <div class="px-6 py-4 bg-wine-800 text-white flex items-center justify-between">
+        <h3 id="modal-produto-title" class="font-serif text-2xl font-bold">Novo Perfume Pronta Entrega</h3>
+        <button onclick="closeModal('modal-produto')" class="text-lavender-200 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form onsubmit="saveProduto(event)" class="p-6 space-y-4">
+        <input type="hidden" id="produto-id">
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Nome da Fragrância *</label>
+          <input type="text" id="produto-nome" required placeholder="Ex: Lavanda & Mirra Imperial, Néroli Noturno..." class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Concentração *</label>
+            <select id="produto-concentracao" required class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+              <option value="Extrait de Parfum">Extrait de Parfum</option>
+              <option value="Eau de Parfum" selected>Eau de Parfum (EDP)</option>
+              <option value="Eau de Toilette">Eau de Toilette (EDT)</option>
+              <option value="Deo Colônia">Deo Colônia</option>
+              <option value="Perfume Botânico em Óleo">Perfume Botânico em Óleo</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Volumetria *</label>
+            <input type="text" id="produto-volumetria" required placeholder="Ex: 50ml, 30ml, 15ml..." class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Qtd. Pronta *</label>
+            <input type="number" min="0" step="1" id="produto-qtd" required placeholder="0" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Custo Prod. (R$) *</label>
+            <input type="number" min="0" step="0.01" id="produto-custo" required placeholder="0.00" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Preço Venda (R$) *</label>
+            <input type="number" min="0" step="0.01" id="produto-preco" required placeholder="0.00" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Pirâmide Olfativa / Notas (Opcional)</label>
+          <input type="text" id="produto-notas" placeholder="Ex: Lavanda Francesa, Alecrim, Resina de Mirra e Jojoba" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-lavender-100">
+          <button type="button" onclick="closeModal('modal-produto')" class="px-4 py-2 text-sm font-medium text-wine-900 hover:bg-lavender-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-sm font-medium bg-wine-800 hover:bg-wine-900 text-white rounded-xl shadow-sm transition">Salvar Perfume</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Gerenciar Dados de Exemplo / Limpar -->
+  <div id="modal-reset" class="fixed inset-0 z-50 hidden bg-wine-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-lavender-200 shadow-xl overflow-hidden">
+      <div class="px-6 py-4 bg-wine-800 text-white flex items-center justify-between">
+        <h3 class="font-serif text-2xl font-bold">Gerenciar Dados — Éxor</h3>
+        <button onclick="closeModal('modal-reset')" class="text-lavender-200 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-sm text-wine-950/80">Escolha uma opção abaixo. Recomendamos exportar um backup antes de limpar ou restaurar os dados.</p>
+        <div class="space-y-3">
+          <button onclick="restaurarDadosExemplo()" class="w-full text-left p-3.5 rounded-xl border border-lavender-300 hover:border-wine-800 bg-lavender-50 transition">
+            <p class="font-semibold text-sm text-wine-950">Restaurar Exemplos da Éxor Perfumaria</p>
+            <p class="text-xs text-wine-950/75 mt-0.5">Carrega insumos botânicos, embalagens, envio e perfumes com ficha técnica pronta.</p>
+          </button>
+          <button onclick="limparTodosDados()" class="w-full text-left p-3.5 rounded-xl border border-rose-200 hover:border-rose-500 bg-rose-50/50 transition">
+            <p class="font-semibold text-sm text-rose-800">Zerar Tudo (Começar do Zero)</p>
+            <p class="text-xs text-rose-700 mt-0.5">Remove todos os insumos, fichas técnicas e perfumes cadastrados.</p>
+          </button>
+        </div>
+        <div class="pt-2 flex justify-end">
+          <button onclick="closeModal('modal-reset')" class="px-4 py-2 text-sm font-medium text-wine-900 hover:bg-lavender-100 rounded-xl">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmação Genérica -->
+  <div id="modal-confirm" class="fixed inset-0 z-50 hidden bg-wine-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+  <!-- Modal Registrar Venda Avulsa -->
+  <div id="modal-venda" class="fixed inset-0 z-50 hidden bg-wine-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-lavender-200 shadow-xl overflow-hidden">
+      <div class="px-6 py-4 bg-wine-800 text-white flex items-center justify-between">
+        <h3 class="font-serif text-2xl font-bold">Registrar Venda</h3>
+        <button onclick="closeModal('modal-venda')" class="text-lavender-200 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form onsubmit="saveVendaModal(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Perfume Pronta Entrega *</label>
+          <select id="venda-produto-id" required onchange="syncVendaPrecoSugerido()" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+            <!-- Preenchido via JS -->
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Quantidade *</label>
+            <input type="number" id="venda-qtd" min="1" step="1" value="1" required class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Preço Unitário (R$) *</label>
+            <input type="number" id="venda-preco-unit" min="0" step="0.01" required class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Canal / Observação (Opcional)</label>
+          <input type="text" id="venda-obs" placeholder="Ex: Instagram, WhatsApp, Feira Botânica..." class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+        </div>
+        <label class="inline-flex items-center gap-2 text-xs text-wine-950/85 cursor-pointer">
+          <input type="checkbox" id="venda-baixar-estoque" checked class="rounded text-wine-800 focus:ring-wine-800">
+          <span>Descontar automaticamente da Pronta Entrega</span>
+        </label>
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-lavender-100">
+          <button type="button" onclick="closeModal('modal-venda')" class="px-4 py-2 text-sm font-medium text-wine-900 hover:bg-lavender-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-sm font-medium bg-wine-800 hover:bg-wine-900 text-white rounded-xl shadow-sm transition">Confirmar Venda</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Sincronização na Nuvem (Firebase Firestore) -->
+  <div id="modal-cloud" class="fixed inset-0 z-50 hidden bg-wine-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-lavender-200 shadow-xl overflow-hidden max-h-[92vh] overflow-y-auto">
+      <div class="px-6 py-4 bg-wine-800 text-white flex items-center justify-between">
+        <h3 class="font-serif text-2xl font-bold">Sincronização na Nuvem</h3>
+        <button onclick="closeModal('modal-cloud')" class="text-lavender-200 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="bg-lavender-50 border border-lavender-200 rounded-xl p-3.5 text-xs text-wine-950/85 space-y-1.5">
+          <p class="font-semibold text-wine-900">Como funciona:</p>
+          <p>Por padrão, a Éxor Perfumaria opera em <strong>Modo Local</strong> (salvo neste navegador e exportável em JSON). Cole o objeto JSON do seu projeto Firebase abaixo para ativar a sincronização em tempo real entre dispositivos.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Código do Ateliê / Workspace</label>
+          <input type="text" id="cloud-workspace-id" value="exor-atelier" placeholder="exor-atelier" class="w-full px-3.5 py-2 text-sm bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-wine-900 mb-1">Credenciais Firebase (JSON)</label>
+          <textarea id="cloud-config-json" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}' class="w-full px-3.5 py-2 text-xs font-mono bg-lavender-50 border border-lavender-300 rounded-xl focus:outline-none focus:border-wine-800"></textarea>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-lavender-100">
+          <button type="button" onclick="disconnectCloud()" class="px-3.5 py-2 text-xs font-medium text-rose-700 hover:bg-rose-50 rounded-xl transition">
+            Usar Apenas Modo Local
+          </button>
+          <div class="flex gap-2">
+            <button type="button" onclick="closeModal('modal-cloud')" class="px-4 py-2 text-xs font-medium text-wine-900 hover:bg-lavender-100 rounded-xl transition">Fechar</button>
+            <button type="button" onclick="connectCloud()" class="px-4 py-2 text-xs font-semibold bg-wine-800 hover:bg-wine-900 text-white rounded-xl transition">
+              Conectar & Sincronizar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp, getApps, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const CLOUD_SETTINGS_KEY = 'exor_perfumaria_cloud_v1';
+    let cloudUnsubscribe = null;
+    let isRemoteUpdating = false;
+
+    function updateCloudBadge(statusText, isConnected) {
+      const labelEl = document.getElementById('cloud-status-label');
+      const dotEl = document.getElementById('cloud-status-dot');
+      if (labelEl) labelEl.textContent = statusText;
+      if (dotEl) {
+        dotEl.className = `w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-300' : 'bg-lavender-300'}`;
+      }
+    }
+
+    async function teardownCloud() {
+      if (cloudUnsubscribe) {
+        cloudUnsubscribe();
+        cloudUnsubscribe = null;
+      }
+      for (const appInstance of getApps()) {
+        try {
+          await deleteApp(appInstance);
+        } catch (_) {}
+      }
+    }
+
+    window.syncCloudState = async function(snapshotState) {
+      try {
+        if (isRemoteUpdating) return;
+        const raw = localStorage.getItem(CLOUD_SETTINGS_KEY);
+        if (!raw) return;
+        const cfg = JSON.parse(raw);
+        if (!cfg || !cfg.config || !cfg.config.projectId) return;
+
+        const appInstance = getApps()[0];
+        if (!appInstance) return;
+        const db = getFirestore(appInstance);
+        const workspace = (cfg.workspace || 'exor-atelier').trim() || 'exor-atelier';
+        const docRef = doc(db, 'artifacts', workspace, 'public', 'data', 'atelier_state');
+        await setDoc(docRef, {
+          updatedAt: new Date().toISOString(),
+          payload: JSON.stringify(snapshotState)
+        });
+      } catch (err) {
+        console.error('Falha ao enviar para nuvem:', err);
+      }
+    };
+
+    async function initCloudFromSettings(showFeedback = false) {
+      await teardownCloud();
+      const raw = localStorage.getItem(CLOUD_SETTINGS_KEY);
+      if (!raw) {
+        updateCloudBadge('Modo Local', false);
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed.config || !parsed.config.projectId) {
+          updateCloudBadge('Modo Local', false);
+          return;
+        }
+
+        const appInstance = initializeApp(parsed.config, 'exor-cloud-app');
+        const auth = getAuth(appInstance);
+        await signInAnonymously(auth);
+
+        const db = getFirestore(appInstance);
+        const workspace = (parsed.workspace || 'exor-atelier').trim() || 'exor-atelier';
+        const docRef = doc(db, 'artifacts', workspace, 'public', 'data', 'atelier_state');
+
+        cloudUnsubscribe = onSnapshot(docRef, (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data && data.payload) {
+              try {
+                const remoteState = JSON.parse(data.payload);
+                isRemoteUpdating = true;
+                window.applyRemoteState(remoteState);
+                isRemoteUpdating = false;
+              } catch (e) {
+                console.error('Erro ao ler dados remotos:', e);
+              }
+            }
+          } else {
+            window.syncCloudState(window.getCurrentState());
+          }
+        }, (err) => {
+          console.error('Erro no listener da nuvem:', err);
+          updateCloudBadge('Erro Nuvem', false);
+        });
+
+        updateCloudBadge('Nuvem Ativa', true);
+        if (showFeedback) {
+          showToast('Conectado à nuvem! Sincronização ativada.');
+        }
+      } catch (err) {
+        console.error('Erro ao conectar Firebase:', err);
+        updateCloudBadge('Modo Local', false);
+        if (showFeedback) {
+          showToast('Credenciais Firebase inválidas ou sem permissão.', 'error');
+        }
+      }
+    }
+
+    window.openCloudModal = function() {
+      const raw = localStorage.getItem(CLOUD_SETTINGS_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          document.getElementById('cloud-workspace-id').value = parsed.workspace || 'exor-atelier';
+          document.getElementById('cloud-config-json').value = parsed.config ? JSON.stringify(parsed.config, null, 2) : '';
+        } catch (_) {}
+      }
+      document.getElementById('modal-cloud').classList.remove('hidden');
+    };
+
+    window.connectCloud = async function() {
+      const workspace = document.getElementById('cloud-workspace-id').value.trim() || 'exor-atelier';
+      const jsonText = document.getElementById('cloud-config-json').value.trim();
+      if (!jsonText) {
+        showToast('Cole o JSON de configuração do seu projeto Firebase.', 'error');
+        return;
+      }
+      try {
+        const configObj = JSON.parse(jsonText);
+        if (!configObj.apiKey || !configObj.projectId) {
+          showToast('O JSON precisa conter pelo menos apiKey e projectId.', 'error');
+          return;
+        }
+        localStorage.setItem(CLOUD_SETTINGS_KEY, JSON.stringify({ workspace, config: configObj }));
+        closeModal('modal-cloud');
+        await initCloudFromSettings(true);
+      } catch (e) {
+        showToast('JSON inválido. Verifique as aspas e vírgulas.', 'error');
+      }
+    };
+
+    window.disconnectCloud = async function() {
+      localStorage.removeItem(CLOUD_SETTINGS_KEY);
+      await teardownCloud();
+      updateCloudBadge('Modo Local', false);
+      closeModal('modal-cloud');
+      showToast('Modo local ativado. Dados salvos neste navegador.');
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initCloudFromSettings(false);
+    });
+  </script>
+
+  <script>
+    // =========================================================================
+    // ESTADO E PERSISTÊNCIA (LOCALSTORAGE - ÉXOR PERFUMARIA)
+    // =========================================================================
+    const STORAGE_KEY = 'exor_perfumaria_v1';
+
+    const CATEGORIAS_INSUMOS = [
+      'Matéria-prima',
+      'Bases',
+      'Embalagens',
+      'Outros itens de produção',
+      'Envio'
+    ];
+
+    const DEFAULT_DATA = {
+      insumos: [
+        {
+          id: 'ins-1',
+          nome: 'Óleo Essencial Lavanda Francesa (Lavandula angustifolia)',
+          categoria: 'Matéria-prima',
+          subtipo: 'Óleos essenciais',
+          unidade: 'ml',
+          quantidade: 120,
+          minimo: 60,
+          custoUnitario: 2.40,
+          totalInvestido: 360.00,
+          fornecedor: 'Terra Flor Aromaterapia'
+        },
+        {
+          id: 'ins-2',
+          nome: 'Resina de Mirra Somália (Tintura / Absoluto)',
+          categoria: 'Matéria-prima',
+          subtipo: 'Resinas',
+          unidade: 'g',
+          quantidade: 45,
+          minimo: 50,
+          custoUnitario: 3.10,
+          totalInvestido: 248.00,
+          fornecedor: 'Botânica Pura'
+        },
+        {
+          id: 'ins-3',
+          nome: 'Alecrim Orgânico Desidratado (Maceração)',
+          categoria: 'Matéria-prima',
+          subtipo: 'Ervas',
+          unidade: 'g',
+          quantidade: 280,
+          minimo: 100,
+          custoUnitario: 0.18,
+          totalInvestido: 72.00,
+          fornecedor: 'Ervanário Serra Verde'
+        },
+        {
+          id: 'ins-4',
+          nome: 'Óleo Vegetal de Rosa Mosqueta Prensado a Frio',
+          categoria: 'Matéria-prima',
+          subtipo: 'Óleos vegetais',
+          unidade: 'ml',
+          quantidade: 90,
+          minimo: 100,
+          custoUnitario: 0.85,
+          totalInvestido: 170.00,
+          fornecedor: 'Terra Flor Aromaterapia'
+        },
+        {
+          id: 'ins-5',
+          nome: 'Álcool de Cereais Extra Neutro 96°',
+          categoria: 'Bases',
+          subtipo: 'Álcool de cereais',
+          unidade: 'ml',
+          quantidade: 3800,
+          minimo: 1500,
+          custoUnitario: 0.036,
+          totalInvestido: 180.00,
+          fornecedor: 'Destilaria Botânica'
+        },
+        {
+          id: 'ins-6',
+          nome: 'Óleo Vegetal de Jojoba Dourada (Base Roll-on)',
+          categoria: 'Bases',
+          subtipo: 'Óleos vegetais',
+          unidade: 'ml',
+          quantidade: 420,
+          minimo: 200,
+          custoUnitario: 0.48,
+          totalInvestido: 240.00,
+          fornecedor: 'Botânica Pura'
+        },
+        {
+          id: 'ins-7',
+          nome: 'Frasco Vidro Âmbar 50ml Recrave',
+          categoria: 'Embalagens',
+          subtipo: 'Frascos e válvulas',
+          unidade: 'un',
+          quantidade: 18,
+          minimo: 25,
+          custoUnitario: 6.50,
+          totalInvestido: 260.00,
+          fornecedor: 'Vidraria Imperial'
+        },
+        {
+          id: 'ins-8',
+          nome: 'Válvula Spray Luxo + Tampa Vinho Fosco 15mm',
+          categoria: 'Embalagens',
+          subtipo: 'Frascos e válvulas',
+          unidade: 'un',
+          quantidade: 22,
+          minimo: 25,
+          custoUnitario: 3.40,
+          totalInvestido: 170.00,
+          fornecedor: 'Vidraria Imperial'
+        },
+        {
+          id: 'ins-9',
+          nome: 'Rótulo Papel Algodão Lavanda + Hot Stamping',
+          categoria: 'Embalagens',
+          subtipo: 'Rótulos e caixas',
+          unidade: 'un',
+          quantidade: 75,
+          minimo: 40,
+          custoUnitario: 1.65,
+          totalInvestido: 165.00,
+          fornecedor: 'Gráfica Fine Art'
+        },
+        {
+          id: 'ins-10',
+          nome: 'Pipetas Pasteur Graduadas + Papel Filtro Qualitativo',
+          categoria: 'Outros itens de produção',
+          subtipo: 'Utensílios / Filtros',
+          unidade: 'un',
+          quantidade: 60,
+          minimo: 30,
+          custoUnitario: 0.55,
+          totalInvestido: 55.00,
+          fornecedor: 'LabPure'
+        },
+        {
+          id: 'ins-11',
+          nome: 'Kit Envio (Caixa Kraft Rígida + Papel Seda Lavanda + Lacre)',
+          categoria: 'Envio',
+          subtipo: 'Caixa e proteção de envio',
+          unidade: 'un',
+          quantidade: 14,
+          minimo: 20,
+          custoUnitario: 4.90,
+          totalInvestido: 147.00,
+          fornecedor: 'Embalagens Nobres'
+        }
+      ],
+      produtos: [
+        {
+          id: 'prod-1',
+          nome: 'Lavanda & Mirra Imperial',
+          concentracao: 'Eau de Parfum',
+          volumetria: '50ml',
+          quantidade: 10,
+          custoProducao: 42.34,
+          precoVenda: 168.00,
+          notas: 'Lavanda Francesa, Alecrim Orgânico, Resina de Mirra e Álcool Extra Neutro',
+          receita: [
+            { insumoId: 'ins-1', quantidade: 7 },
+            { insumoId: 'ins-2', quantidade: 2.5 },
+            { insumoId: 'ins-5', quantidade: 40 },
+            { insumoId: 'ins-7', quantidade: 1 },
+            { insumoId: 'ins-8', quantidade: 1 },
+            { insumoId: 'ins-9', quantidade: 1 },
+            { insumoId: 'ins-10', quantidade: 1 },
+            { insumoId: 'ins-11', quantidade: 1 }
+          ]
+        },
+        {
+          id: 'prod-2',
+          nome: 'Elixir Botânico Noturno',
+          concentracao: 'Perfume Botânico em Óleo',
+          volumetria: '30ml',
+          quantidade: 8,
+          custoProducao: 38.65,
+          precoVenda: 145.00,
+          notas: 'Óleo de Jojoba, Rosa Mosqueta, Lavanda Francesa e Mirra',
+          receita: [
+            { insumoId: 'ins-1', quantidade: 4 },
+            { insumoId: 'ins-4', quantidade: 5 },
+            { insumoId: 'ins-6', quantidade: 20 },
+            { insumoId: 'ins-9', quantidade: 1 },
+            { insumoId: 'ins-11', quantidade: 1 }
+          ]
+        }
+      ],
+      vendas: [],
+      qtdComprasPlanejadas: {}
+    };
+
+    let state = {
+      insumos: [],
+      produtos: [],
+      vendas: [],
+      qtdComprasPlanejadas: {}
+    };
+
+    // Estado temporário da tela de Precificação & Ficha Técnica
+    let precifState = {
+      produtoId: '',
+      itens: [] // [{ insumoId, quantidade }]
+    };
+
+    window.getCurrentState = function() {
+      return state;
+    };
+
+    window.applyRemoteState = function(remoteState) {
+      if (!remoteState || !Array.isArray(remoteState.insumos) || !Array.isArray(remoteState.produtos)) return;
+      state.insumos = remoteState.insumos;
+      state.produtos = remoteState.produtos;
+      state.vendas = Array.isArray(remoteState.vendas) ? remoteState.vendas : [];
+      state.qtdComprasPlanejadas = remoteState.qtdComprasPlanejadas || {};
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+    };
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state.insumos = Array.isArray(parsed.insumos) ? parsed.insumos : [];
+          state.produtos = Array.isArray(parsed.produtos) ? parsed.produtos : [];
+          state.vendas = Array.isArray(parsed.vendas) ? parsed.vendas : [];
+          state.qtdComprasPlanejadas = parsed.qtdComprasPlanejadas || {};
+        } else {
+          state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+          saveState();
+        }
+      } catch (e) {
+        console.error('Erro ao ler localStorage:', e);
+        state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        if (typeof window.syncCloudState === 'function') {
+          window.syncCloudState(state);
+        }
+      } catch (e) {
+        console.error('Erro ao salvar no localStorage:', e);
+        showToast('Erro ao salvar dados no navegador.', 'error');
+      }
+    }
+
+    // =========================================================================
+    // UTILITÁRIOS
+    // =========================================================================
+    function formatBRL(valor) {
+      return Number(valor || 0).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
+    }
+
+    function formatNumber(num, unidade = '') {
+      const formatted = Number(num || 0).toLocaleString('pt-BR', {
+        maximumFractionDigits: 2
+      });
+      return unidade ? `${formatted} ${unidade}` : formatted;
+    }
+
+    function getStatusInsumo(insumo) {
+      if (insumo.quantidade <= 0) {
+        return { label: 'Crítico / Zerado', code: 'Crítico', badgeClass: 'bg-rose-100 text-rose-800 border-rose-200' };
+      }
+      if (insumo.quantidade <= insumo.minimo) {
+        return { label: 'Baixo Estoque', code: 'Baixo', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200' };
+      }
+      return { label: 'OK', code: 'OK', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bgClass = type === 'error'
+        ? 'bg-rose-800 text-white'
+        : 'bg-wine-900 text-lavender-50 border border-lavender-400/30';
+      toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2.5 transform transition-all duration-300 translate-y-2 opacity-0`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${type === 'error' ? 'bg-rose-400' : 'bg-lavender-300'}"></span>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // =========================================================================
+    // NAVEGAÇÃO POR ABAS
+    // =========================================================================
+    function switchTab(tabName) {
+      const tabs = ['dashboard', 'insumos', 'precificacao', 'pronta-entrega', 'vendas', 'reposicao'];
+      tabs.forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tabName) {
+          view.classList.remove('hidden');
+          btn.classList.add('border-lavender-300', 'text-white');
+          btn.classList.remove('border-transparent', 'text-lavender-200');
+        } else {
+          view.classList.add('hidden');
+          btn.classList.remove('border-lavender-300', 'text-white');
+          btn.classList.add('border-transparent', 'text-lavender-200');
+        }
+      });
+      renderAll();
+    }
+
+    // =========================================================================
+    // RENDERIZAÇÃO PRINCIPAL
+    // =========================================================================
+    function renderAll() {
+      updateBadges();
+      renderDashboard();
+      renderInsumos();
+      renderPrecificacaoUI();
+      renderProntaEntrega();
+      renderVendas();
+      renderReposicao();
+    }
+
+    function updateBadges() {
+      const totalInsumos = state.insumos.length;
+      const precisamReposicao = state.insumos.filter(i => i.quantidade <= i.minimo).length;
+      const totalFrascosProntos = state.produtos.reduce((acc, p) => acc + Number(p.quantidade || 0), 0);
+      const totalVendas = state.vendas.length;
+
+      document.getElementById('badge-total-insumos').textContent = totalInsumos;
+      document.getElementById('badge-reposicao').textContent = precisamReposicao;
+      document.getElementById('badge-pronta-entrega').textContent = totalFrascosProntos;
+      document.getElementById('badge-vendas').textContent = totalVendas;
+      document.getElementById('footer-stats').textContent = `${totalInsumos} insumos cadastrados • ${state.produtos.length} fragrâncias ativas • ${totalVendas} vendas registradas`;
+    }
+
+    function getMetricasVendas() {
+      const faturamento = state.vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
+      const custoVendido = state.vendas.reduce((acc, v) => acc + (Number(v.custoUnitario || 0) * Number(v.quantidade || 0)), 0);
+      const lucroRealizado = faturamento - custoVendido;
+      const frascosVendidos = state.vendas.reduce((acc, v) => acc + Number(v.quantidade || 0), 0);
+      return { faturamento, custoVendido, lucroRealizado, frascosVendidos };
+    }
+
+    // --- 1. DASHBOARD ---
+    function renderDashboard() {
+      let totalJaInvestido = 0;
+      let valorAtualInsumos = 0;
+
+      state.insumos.forEach(ins => {
+        const valorAtual = Number(ins.quantidade) * Number(ins.custoUnitario);
+        valorAtualInsumos += valorAtual;
+        const investidoItem = Math.max(Number(ins.totalInvestido || 0), valorAtual);
+        totalJaInvestido += investidoItem;
+      });
+
+      let totalUnidadesProntas = 0;
+      let valorCustoProntos = 0;
+      let potencialVendaTotal = 0;
+
+      state.produtos.forEach(p => {
+        const qtd = Number(p.quantidade || 0);
+        totalUnidadesProntas += qtd;
+        valorCustoProntos += qtd * Number(p.custoProducao || 0);
+        potencialVendaTotal += qtd * Number(p.precoVenda || 0);
+      });
+
+      const lucroProjetado = potencialVendaTotal - valorCustoProntos;
+      const vendasMetricas = getMetricasVendas();
+      const recuperacaoPct = totalJaInvestido > 0 ? Math.round((vendasMetricas.faturamento / totalJaInvestido) * 100) : 0;
+
+      document.getElementById('kpi-total-investido').textContent = formatBRL(totalJaInvestido);
+      document.getElementById('kpi-valor-estoque-total').textContent = formatBRL(valorAtualInsumos + valorCustoProntos);
+      document.getElementById('kpi-sub-insumos').textContent = formatBRL(valorAtualInsumos);
+      document.getElementById('kpi-sub-prontos').textContent = formatBRL(valorCustoProntos);
+
+      document.getElementById('kpi-qtd-pronta-entrega').textContent = totalUnidadesProntas;
+      document.getElementById('kpi-valor-venda-potencial').textContent = formatBRL(potencialVendaTotal);
+      document.getElementById('kpi-lucro-projetado').textContent = formatBRL(lucroProjetado);
+
+      document.getElementById('dash-faturamento-real').textContent = formatBRL(vendasMetricas.faturamento);
+      document.getElementById('dash-roi-capital').textContent = `${recuperacaoPct}%`;
+
+      // Alertas de reposição
+      const insumosBaixos = state.insumos.filter(i => i.quantidade <= i.minimo);
+      let custoEstimadoReposicao = 0;
+      insumosBaixos.forEach(i => {
+        const alvo = Math.max(i.minimo * 1.5, i.minimo > 0 ? i.minimo : 10);
+        const falta = Math.max(0, alvo - i.quantidade);
+        custoEstimadoReposicao += falta * i.custoUnitario;
+      });
+
+      document.getElementById('kpi-qtd-reposicao').textContent = insumosBaixos.length;
+      document.getElementById('kpi-custo-reposicao').textContent = formatBRL(custoEstimadoReposicao);
+
+      // Grid de Categorias (5 categorias de insumos + Perfumes pronta entrega)
+      const catGrid = document.getElementById('dashboard-categorias-grid');
+      const cardsHtml = CATEGORIAS_INSUMOS.map(cat => {
+        const itensCat = state.insumos.filter(i => i.categoria === cat);
+        const atualCat = itensCat.reduce((acc, i) => acc + (i.quantidade * i.custoUnitario), 0);
+        const investidoCat = itensCat.reduce((acc, i) => acc + Math.max(Number(i.totalInvestido || 0), i.quantidade * i.custoUnitario), 0);
+        const pct = valorAtualInsumos > 0 ? Math.round((atualCat / valorAtualInsumos) * 100) : 0;
+
+        return `
+          <div class="p-4 rounded-xl bg-lavender-50/80 border border-lavender-200 flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-semibold text-sm text-wine-900">${cat}</span>
+              <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-wine-800 border border-lavender-200">${itensCat.length} itens</span>
+            </div>
+            <div class="mt-3">
+              <p class="text-xs text-wine-950/70">Em estoque hoje:</p>
+              <p class="text-lg font-bold text-wine-950">${formatBRL(atualCat)}</p>
+              <div class="w-full h-1.5 bg-lavender-200 rounded-full overflow-hidden mt-2">
+                <div class="h-full bg-wine-800 rounded-full" style="width: ${pct}%"></div>
+              </div>
+              <p class="text-[11px] text-wine-950/70 mt-1.5 flex justify-between">
+                <span>Já investido: <strong>${formatBRL(investidoCat)}</strong></span>
+                <span>${pct}%</span>
+              </p>
+            </div>
+          </div>
+        `;
+      });
+
+      // 6º Card: Perfumes Pronta Entrega
+      cardsHtml.push(`
+        <div class="p-4 rounded-xl bg-wine-800 text-white border border-wine-900 flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-semibold text-sm text-lavender-200">Perfumes Pronta Entrega</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-lavender-200 text-wine-950">${totalUnidadesProntas} frascos</span>
+          </div>
+          <div class="mt-3">
+            <p class="text-xs text-lavender-200/80">Custo imobilizado prontos:</p>
+            <p class="text-lg font-bold text-white">${formatBRL(valorCustoProntos)}</p>
+            <p class="text-[11px] text-lavender-200 mt-2.5 flex justify-between border-t border-wine-700 pt-1.5">
+              <span>Venda potencial:</span>
+              <strong class="text-emerald-300">${formatBRL(potencialVendaTotal)}</strong>
+            </p>
+          </div>
+        </div>
+      `);
+
+      catGrid.innerHTML = cardsHtml.join('');
+
+      // Lista Rápida de Reposição no Dashboard
+      const dashRepList = document.getElementById('dashboard-reposicao-list');
+      if (insumosBaixos.length === 0) {
+        dashRepList.innerHTML = `
+          <div class="p-8 text-center text-wine-950/75">
+            <p class="font-medium text-sm">Todos os insumos estão abastecidos!</p>
+            <p class="text-xs mt-1 opacity-80">Nenhum item atingiu o estoque mínimo de segurança.</p>
+          </div>
+        `;
+      } else {
+        dashRepList.innerHTML = insumosBaixos.slice(0, 5).map(ins => {
+          const status = getStatusInsumo(ins);
+          return `
+            <div class="p-4 flex items-center justify-between gap-3 hover:bg-lavender-50/70 transition">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-sm text-wine-950 truncate">${ins.nome}</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded-full border font-medium shrink-0 ${status.badgeClass}">${status.label}</span>
+                </div>
+                <p class="text-xs text-wine-950/75 mt-0.5">
+                  ${ins.categoria} • Atual: <strong class="text-wine-950">${formatNumber(ins.quantidade, ins.unidade)}</strong> (Mín: ${formatNumber(ins.minimo, ins.unidade)})
+                </p>
+              </div>
+              <button onclick="openEntradaModal('${ins.id}')" class="px-3 py-1.5 text-xs font-medium bg-lavender-100 hover:bg-wine-800 hover:text-white text-wine-900 rounded-lg border border-lavender-300 transition shrink-0">
+                + Repor
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Vitrine Pronta Entrega no Dashboard
+      const dashPronta = document.getElementById('dashboard-pronta-list');
+      if (state.produtos.length === 0) {
+        dashPronta.innerHTML = `<p class="text-xs text-lavender-200/80">Nenhum perfume finalizado cadastrado.</p>`;
+      } else {
+        dashPronta.innerHTML = state.produtos.slice(0, 4).map(p => `
+          <div class="flex items-center justify-between py-2 border-b border-wine-700/70 last:border-0">
+            <div class="truncate pr-2">
+              <p class="font-medium text-white truncate">${p.nome}</p>
+              <p class="text-[11px] text-lavender-200">${p.concentracao} • ${p.volumetria} • ${formatBRL(p.precoVenda)}</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg bg-wine-900 text-lavender-200 font-bold text-xs shrink-0 border border-lavender-400/20">
+              ${p.quantidade} un
+            </span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // --- 2. GESTÃO DE INSUMOS ---
+    function renderInsumos() {
+      const search = (document.getElementById('search-insumo').value || '').toLowerCase();
+      const catFilter = document.getElementById('filter-categoria').value;
+      const statusFilter = document.getElementById('filter-status').value;
+
+      const filtered = state.insumos.filter(ins => {
+        const matchText = ins.nome.toLowerCase().includes(search) ||
+                          (ins.subtipo && ins.subtipo.toLowerCase().includes(search)) ||
+                          (ins.fornecedor && ins.fornecedor.toLowerCase().includes(search));
+        const matchCat = catFilter === 'Todas' || ins.categoria === catFilter;
+        const statusObj = getStatusInsumo(ins);
+        const matchStatus = statusFilter === 'Todos' || statusObj.code === statusFilter;
+        return matchText && matchCat && matchStatus;
+      });
+
+      const tbody = document.getElementById('tabela-insumos-body');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="py-10 text-center text-wine-950/70 text-sm">
+              Nenhum insumo encontrado com os filtros atuais.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(ins => {
+        const status = getStatusInsumo(ins);
+        const valorEstoque = ins.quantidade * ins.custoUnitario;
+        return `
+          <tr class="hover:bg-lavender-50/70 transition">
+            <td class="py-3.5 px-4">
+              <p class="font-semibold text-wine-950">${ins.nome}</p>
+              <p class="text-xs text-wine-950/70">
+                ${ins.subtipo ? `<span class="text-wine-800 font-medium">${ins.subtipo}</span>` : ''}
+                ${ins.subtipo && ins.fornecedor ? ' • ' : ''}
+                ${ins.fornecedor ? `Forn: ${ins.fornecedor}` : ''}
+              </p>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="text-xs font-medium px-2.5 py-1 rounded-lg bg-lavender-100 text-wine-900 whitespace-nowrap">${ins.categoria}</span>
+            </td>
+            <td class="py-3.5 px-4 text-right font-semibold text-wine-950 whitespace-nowrap">
+              ${formatNumber(ins.quantidade, ins.unidade)}
+            </td>
+            <td class="py-3.5 px-4 text-right text-wine-950/75 whitespace-nowrap">
+              ${formatNumber(ins.minimo, ins.unidade)}
+            </td>
+            <td class="py-3.5 px-4 text-right text-wine-950/80 whitespace-nowrap">
+              ${formatBRL(ins.custoUnitario)}/${ins.unidade}
+            </td>
+            <td class="py-3.5 px-4 text-right font-semibold text-wine-950 whitespace-nowrap">
+              ${formatBRL(valorEstoque)}
+            </td>
+            <td class="py-3.5 px-4 text-center">
+              <span class="inline-block text-xs px-2.5 py-0.5 rounded-full border font-medium whitespace-nowrap ${status.badgeClass}">
+                ${status.label}
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              <div class="inline-flex items-center justify-end gap-1.5">
+                <button onclick="openEntradaModal('${ins.id}')" title="Registrar Compra / Entrada" class="px-2.5 py-1.5 text-xs font-medium bg-lavender-100 hover:bg-wine-800 text-wine-900 hover:text-white rounded-lg transition whitespace-nowrap">
+                  + Compra
+                </button>
+                <button onclick="openInsumoModal('${ins.id}')" title="Editar Insumo" class="p-1.5 text-wine-800 hover:bg-lavender-200 rounded-lg transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+                <button onclick="confirmDeleteInsumo('${ins.id}')" title="Excluir Insumo" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // --- 3. PRECIFICAÇÃO & FICHA TÉCNICA ---
+    function abrirPrecificacaoProduto(produtoId) {
+      switchTab('precificacao');
+      const select = document.getElementById('precif-select-produto');
+      select.value = produtoId;
+      carregarFichaTecnica(produtoId);
+    }
+
+    function carregarFichaTecnica(produtoId) {
+      precifState.produtoId = produtoId || '';
+      if (produtoId) {
+        const prod = state.produtos.find(p => p.id === produtoId);
+        if (prod && Array.isArray(prod.receita)) {
+          precifState.itens = JSON.parse(JSON.stringify(prod.receita));
+        } else {
+          precifState.itens = [];
+        }
+      } else {
+        precifState.itens = [];
+      }
+      renderPrecificacaoUI();
+    }
+
+    function renderPrecificacaoUI() {
+      // Atualiza select de produtos
+      const selectProd = document.getElementById('precif-select-produto');
+      const currentVal = precifState.produtoId;
+      selectProd.innerHTML = `<option value="">+ Nova Simulação / Receita Avulsa</option>` +
+        state.produtos.map(p => `<option value="${p.id}" ${p.id === currentVal ? 'selected' : ''}>${p.nome} (${p.concentracao} • ${p.volumetria})</option>`).join('');
+
+      // Atualiza select de insumos disponíveis
+      const selectIns = document.getElementById('precif-add-insumo');
+      selectIns.innerHTML = state.insumos.map(ins =>
+        `<option value="${ins.id}">[${ins.categoria}] ${ins.nome} (${formatBRL(ins.custoUnitario)}/${ins.unidade})</option>`
+      ).join('');
+
+      // Renderiza tabela de itens da composição
+      const tbody = document.getElementById('precif-tabela-itens');
+      let custoFormula = 0; // Matéria-prima + Bases
+      let custoEmbalagemOutros = 0; // Embalagens + Outros itens de produção + Envio
+
+      if (precifState.itens.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-8 text-center text-xs text-wine-950/65">
+              Nenhum insumo adicionado nesta fórmula ainda. Selecione um insumo acima para calcular o custo real.
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = precifState.itens.map((item, idx) => {
+          const ins = state.insumos.find(i => i.id === item.insumoId);
+          if (!ins) return '';
+          const subtotal = item.quantidade * ins.custoUnitario;
+          if (ins.categoria === 'Matéria-prima' || ins.categoria === 'Bases') {
+            custoFormula += subtotal;
+          } else {
+            custoEmbalagemOutros += subtotal;
+          }
+
+          return `
+            <tr class="hover:bg-lavender-50/60">
+              <td class="py-2.5 px-2 font-medium text-wine-950">${ins.nome}</td>
+              <td class="py-2.5 px-2"><span class="text-[11px] px-2 py-0.5 rounded bg-lavender-100 text-wine-900">${ins.categoria}</span></td>
+              <td class="py-2.5 px-2 text-right">
+                <input type="number" step="0.01" min="0.01" value="${item.quantidade}" onchange="atualizarQtdReceita(${idx}, this.value)" class="w-20 px-2 py-1 text-xs text-right font-semibold bg-lavender-50 border border-lavender-300 rounded-lg">
+                <span class="text-xs text-wine-950/70 ml-1">${ins.unidade}</span>
+              </td>
+              <td class="py-2.5 px-2 text-right font-semibold text-wine-900">${formatBRL(subtotal)}</td>
+              <td class="py-2.5 px-2 text-right">
+                <button onclick="removerItemReceita(${idx})" class="text-rose-600 hover:text-rose-800 p-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const perdaPct = parseFloat(document.getElementById('precif-perda').value) || 0;
+      const perdaDecimal = Math.min(0.9, Math.max(0, perdaPct / 100));
+      const custoPerda = perdaDecimal > 0 ? (custoFormula / (1 - perdaDecimal)) - custoFormula : 0;
+
+      document.getElementById('precif-custo-formula').textContent = formatBRL(custoFormula);
+      document.getElementById('precif-custo-perda').textContent = formatBRL(custoPerda);
+      document.getElementById('precif-custo-embalagem').textContent = formatBRL(custoEmbalagemOutros);
+
+      recalcularPrecificacao(custoFormula + custoPerda + custoEmbalagemOutros);
+    }
+
+    function adicionarItemReceita() {
+      const insumoId = document.getElementById('precif-add-insumo').value;
+      const qtd = parseFloat(document.getElementById('precif-add-qtd').value);
+      if (!insumoId || !qtd || qtd <= 0) {
+        showToast('Informe uma quantidade válida para adicionar à receita.', 'error');
+        return;
+      }
+
+      const existente = precifState.itens.find(i => i.insumoId === insumoId);
+      if (existente) {
+        existente.quantidade += qtd;
+      } else {
+        precifState.itens.push({ insumoId, quantidade: qtd });
+      }
+
+      document.getElementById('precif-add-qtd').value = '';
+      renderPrecificacaoUI();
+    }
+
+    function atualizarQtdReceita(idx, novaQtd) {
+      const val = parseFloat(novaQtd);
+      if (!val || val <= 0) return;
+      precifState.itens[idx].quantidade = val;
+      renderPrecificacaoUI();
+    }
+
+    function removerItemReceita(idx) {
+      precifState.itens.splice(idx, 1);
+      renderPrecificacaoUI();
+    }
+
+    function recalcularPrecificacao(custoInsumosOverride = null) {
+      const perdaPct = parseFloat(document.getElementById('precif-perda')?.value) || 0;
+      const perdaDecimal = Math.min(0.9, Math.max(0, perdaPct / 100));
+
+      let custoFormulaBase = 0;
+      let custoOutrosBase = 0;
+
+      precifState.itens.forEach(item => {
+        const ins = state.insumos.find(i => i.id === item.insumoId);
+        if (!ins) return;
+        const sub = item.quantidade * ins.custoUnitario;
+        if (ins.categoria === 'Matéria-prima' || ins.categoria === 'Bases') {
+          custoFormulaBase += sub;
+        } else {
+          custoOutrosBase += sub;
+        }
+      });
+
+      const custoPerda = perdaDecimal > 0 ? (custoFormulaBase / (1 - perdaDecimal)) - custoFormulaBase : 0;
+      const custoInsumos = custoInsumosOverride !== null ? custoInsumosOverride : (custoFormulaBase + custoPerda + custoOutrosBase);
+
+      if (document.getElementById('precif-custo-perda')) {
+        document.getElementById('precif-custo-perda').textContent = formatBRL(custoPerda);
+      }
+
+      const margemPct = parseFloat(document.getElementById('precif-margem').value) || 0;
+      const taxasPct = parseFloat(document.getElementById('precif-taxas').value) || 0;
+      const impostosPct = parseFloat(document.getElementById('precif-impostos').value) || 0;
+      const rateioFixo = parseFloat(document.getElementById('precif-rateio').value) || 0;
+
+      const custoTotalUnit = custoInsumos + rateioFixo;
+      const divisorPercentual = 1 - ((margemPct + taxasPct + impostosPct) / 100);
+      const precoSugerido = divisorPercentual > 0.05 ? (custoTotalUnit / divisorPercentual) : (custoTotalUnit * 3);
+
+      const deducoesVenda = precoSugerido * ((taxasPct + impostosPct) / 100);
+      const lucroLiquido = precoSugerido - custoTotalUnit - deducoesVenda;
+      const markup = custoTotalUnit > 0 ? (precoSugerido / custoTotalUnit) : 0;
+
+      document.getElementById('precif-custo-total-unit').textContent = formatBRL(custoTotalUnit);
+      document.getElementById('precif-preco-sugerido').textContent = formatBRL(precoSugerido);
+      document.getElementById('precif-lucro-liquido').textContent = formatBRL(lucroLiquido);
+      document.getElementById('precif-markup-info').textContent = `Markup sobre custo: ${markup.toFixed(2)}x`;
+
+      return { custoTotalUnit, precoSugerido };
+    }
+
+    function aplicarPrecoNoProduto() {
+      const { custoTotalUnit, precoSugerido } = recalcularPrecificacao();
+      if (precifState.produtoId) {
+        const prod = state.produtos.find(p => p.id === precifState.produtoId);
+        if (prod) {
+          prod.custoProducao = Number(custoTotalUnit.toFixed(2));
+          prod.precoVenda = Number(precoSugerido.toFixed(2));
+          prod.receita = JSON.parse(JSON.stringify(precifState.itens));
+          saveState();
+          renderAll();
+          showToast(`Custo e preço atualizados em "${prod.nome}"!`);
+        }
+      } else {
+        // Abre modal de novo perfume já preenchido com o custo e preço calculados
+        openProdutoModal();
+        document.getElementById('produto-custo').value = custoTotalUnit.toFixed(2);
+        document.getElementById('produto-preco').value = precoSugerido.toFixed(2);
+      }
+    }
+
+    function produzirLote() {
+      if (!precifState.produtoId) {
+        showToast('Selecione um perfume cadastrado no topo da ficha técnica para produzir um lote.', 'error');
+        return;
+      }
+      if (precifState.itens.length === 0) {
+        showToast('Adicione os insumos da composição antes de registrar a produção.', 'error');
+        return;
+      }
+
+      const qtdFrascos = parseInt(document.getElementById('lote-qtd-produzir').value, 10) || 0;
+      if (qtdFrascos <= 0) return;
+
+      // Verifica se há estoque suficiente
+      for (const item of precifState.itens) {
+        const ins = state.insumos.find(i => i.id === item.insumoId);
+        const necessario = item.quantidade * qtdFrascos;
+        if (!ins || ins.quantidade < necessario) {
+          showToast(`Estoque insuficiente de "${ins ? ins.nome : 'insumo'}" para produzir ${qtdFrascos} un.`, 'error');
+          return;
+        }
+      }
+
+      // Desconta do estoque de insumos
+      precifState.itens.forEach(item => {
+        const ins = state.insumos.find(i => i.id === item.insumoId);
+        if (ins) {
+          ins.quantidade = Math.max(0, Number((ins.quantidade - (item.quantidade * qtdFrascos)).toFixed(4)));
+        }
+      });
+
+      // Adiciona ao estoque de Pronta Entrega
+      const prod = state.produtos.find(p => p.id === precifState.produtoId);
+      if (prod) {
+        prod.quantidade += qtdFrascos;
+        prod.receita = JSON.parse(JSON.stringify(precifState.itens));
+      }
+
+      saveState();
+      renderAll();
+      showToast(`Lote de ${qtdFrascos} frascos de "${prod.nome}" produzido e baixado do estoque!`);
+    }
+
+    // --- 4. PRODUTOS PRONTA ENTREGA ---
+    function renderProntaEntrega() {
+      const grid = document.getElementById('grid-pronta-entrega');
+      if (state.produtos.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-white rounded-2xl border border-lavender-200 p-12 text-center">
+            <p class="font-serif text-2xl font-bold text-wine-900">Nenhum perfume pronta entrega cadastrado</p>
+            <p class="text-sm text-wine-950/75 mt-1 mb-4">Cadastre suas fragrâncias finalizadas ou monte uma ficha técnica na aba de Precificação.</p>
+            <button onclick="openProdutoModal()" class="px-4 py-2 bg-wine-800 text-white text-sm font-medium rounded-xl">Cadastrar Primeiro Perfume</button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = state.produtos.map(prod => {
+        const margem = prod.precoVenda > 0 ? Math.round(((prod.precoVenda - prod.custoProducao) / prod.precoVenda) * 100) : 0;
+        const valorTotalVenda = prod.quantidade * prod.precoVenda;
+        const semEstoque = prod.quantidade <= 0;
+        const temReceita = Array.isArray(prod.receita) && prod.receita.length > 0;
+
+        return `
+          <div class="bg-white rounded-2xl border ${semEstoque ? 'border-rose-200' : 'border-lavender-200'} shadow-sm p-5 flex flex-col justify-between transition hover:shadow-md">
+            <div>
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="inline-block text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-lavender-100 text-wine-900">
+                    ${prod.concentracao} • ${prod.volumetria}
+                  </span>
+                  <h3 class="font-serif text-2xl font-bold text-wine-950 mt-2">${prod.nome}</h3>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="abrirPrecificacaoProduto('${prod.id}')" title="Ficha Técnica & Precificação" class="p-1.5 text-lavender-600 hover:bg-lavender-100 rounded-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                  </button>
+                  <button onclick="openProdutoModal('${prod.id}')" title="Editar" class="p-1.5 text-wine-800 hover:bg-lavender-100 rounded-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+                  <button onclick="confirmDeleteProduto('${prod.id}')" title="Excluir" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              ${prod.notas ? `<p class="text-xs text-wine-950/75 italic mt-2 line-clamp-2">"${prod.notas}"</p>` : ''}
+
+              <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-lavender-100 text-xs">
+                <div>
+                  <span class="text-wine-950/70 block">Custo Unitário</span>
+                  <span class="font-semibold text-wine-950 text-sm">${formatBRL(prod.custoProducao)}</span>
+                </div>
+                <div>
+                  <span class="text-wine-950/70 block">Preço de Venda</span>
+                  <span class="font-bold text-wine-800 text-sm">${formatBRL(prod.precoVenda)} <span class="text-[11px] font-medium text-emerald-700">(${margem}%)</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controle Rápido de Estoque Pronta Entrega -->
+            <div class="mt-5 pt-4 border-t border-lavender-200 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-wine-800">Pronta Entrega</span>
+                <span class="text-xs text-wine-950/75">Potencial: <strong class="text-wine-950">${formatBRL(valorTotalVenda)}</strong></span>
+              </div>
+              <div class="flex items-center justify-between bg-lavender-50 p-2 rounded-xl border border-lavender-200">
+                <button onclick="ajustarEstoqueProduto('${prod.id}', -1)" ${semEstoque ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-xs font-semibold ${semEstoque ? 'bg-lavender-100 text-wine-950/30 cursor-not-allowed' : 'bg-rose-100 hover:bg-rose-600 text-rose-800 hover:text-white'} transition">
+                  -1 Venda
+                </button>
+                <div class="text-center">
+                  <span class="text-xl font-bold ${semEstoque ? 'text-rose-700' : 'text-wine-950'}">${prod.quantidade}</span>
+                  <span class="text-xs text-wine-950/70 ml-1">un</span>
+                </div>
+                <button onclick="ajustarEstoqueProduto('${prod.id}', 1)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-100 hover:bg-emerald-700 text-emerald-900 hover:text-white transition">
+                  +1 Frasco
+                </button>
+              </div>
+              <button onclick="abrirPrecificacaoProduto('${prod.id}')" class="w-full py-1.5 text-[11px] font-semibold text-wine-800 hover:text-wine-950 bg-lavender-100/70 hover:bg-lavender-200 rounded-lg transition">
+                ${temReceita ? `Editar Ficha Técnica (${prod.receita.length} insumos)` : '+ Vincular Ficha Técnica & Precificar'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function ajustarEstoqueProduto(id, delta) {
+      const prod = state.produtos.find(p => p.id === id);
+      if (!prod) return;
+      if (prod.quantidade + delta < 0) return;
+
+      prod.quantidade += delta;
+
+      if (delta < 0) {
+        const qtdVendida = Math.abs(delta);
+        const valorUnit = Number(prod.precoVenda || 0);
+        state.vendas.unshift({
+          id: 'venda-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+          data: new Date().toISOString(),
+          produtoId: prod.id,
+          produtoNome: prod.nome,
+          volumetria: prod.volumetria,
+          quantidade: qtdVendida,
+          valorUnitario: valorUnit,
+          custoUnitario: Number(prod.custoProducao || 0),
+          valorTotal: Number((qtdVendida * valorUnit).toFixed(2)),
+          observacao: 'Venda rápida Pronta Entrega'
+        });
+      }
+
+      saveState();
+      renderAll();
+
+      if (delta > 0) {
+        showToast(`+1 frasco de "${prod.nome}" adicionado à pronta entrega.`);
+      } else {
+        showToast(`Venda registrada: -1 frasco de "${prod.nome}".`);
+      }
+    }
+
+    // --- 4.5 VENDAS & RETORNO FINANCEIRO ---
+    function renderVendas() {
+      const metricas = getMetricasVendas();
+      let totalJaInvestido = 0;
+      state.insumos.forEach(ins => {
+        const valorAtual = Number(ins.quantidade) * Number(ins.custoUnitario);
+        totalJaInvestido += Math.max(Number(ins.totalInvestido || 0), valorAtual);
+      });
+
+      const recuperacaoPct = totalJaInvestido > 0 ? Math.round((metricas.faturamento / totalJaInvestido) * 100) : 0;
+      const saldoVsInvestido = metricas.faturamento - totalJaInvestido;
+
+      document.getElementById('vendas-kpi-faturamento').textContent = formatBRL(metricas.faturamento);
+      document.getElementById('vendas-kpi-frascos').textContent = metricas.frascosVendidos;
+      document.getElementById('vendas-kpi-lucro').textContent = formatBRL(metricas.lucroRealizado);
+      document.getElementById('vendas-kpi-recuperacao').textContent = `${recuperacaoPct}%`;
+
+      const saldoEl = document.getElementById('vendas-kpi-saldo');
+      saldoEl.textContent = formatBRL(saldoVsInvestido);
+      saldoEl.className = `text-2xl font-bold mt-1.5 ${saldoVsInvestido >= 0 ? 'text-emerald-700' : 'text-wine-900'}`;
+
+      const tbody = document.getElementById('tabela-vendas-body');
+      if (!tbody) return;
+
+      if (state.vendas.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-10 text-center text-wine-950/70 text-sm">
+              Nenhuma venda registrada ainda. Use o botão "-1 Venda" na Pronta Entrega ou clique em "Registrar Venda".
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = state.vendas.map(v => {
+        const dt = v.data ? new Date(v.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+        const lucroItem = Number(v.valorTotal || 0) - (Number(v.custoUnitario || 0) * Number(v.quantidade || 0));
+        return `
+          <tr class="hover:bg-lavender-50/70 transition">
+            <td class="py-3 px-4 text-xs text-wine-950/75 whitespace-nowrap">${dt}</td>
+            <td class="py-3 px-4">
+              <p class="font-semibold text-wine-950">${v.produtoNome}</p>
+              <p class="text-[11px] text-wine-950/70">${v.volumetria || ''}${v.observacao ? ` • ${v.observacao}` : ''}</p>
+            </td>
+            <td class="py-3 px-4 text-right font-semibold text-wine-950">${v.quantidade}</td>
+            <td class="py-3 px-4 text-right text-wine-950/80">${formatBRL(v.valorUnitario)}</td>
+            <td class="py-3 px-4 text-right font-bold text-wine-900">${formatBRL(v.valorTotal)}</td>
+            <td class="py-3 px-4 text-right font-semibold text-emerald-700">${formatBRL(lucroItem)}</td>
+            <td class="py-3 px-4 text-right">
+              <button onclick="removerVenda('${v.id}')" title="Remover registro de venda" class="text-xs text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2.5 py-1 rounded-lg transition">
+                Desfazer
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openVendaModal() {
+      const sel = document.getElementById('venda-produto-id');
+      if (state.produtos.length === 0) {
+        showToast('Cadastre um perfume na Pronta Entrega primeiro.', 'error');
+        return;
+      }
+      sel.innerHTML = state.produtos.map(p =>
+        `<option value="${p.id}" data-preco="${p.precoVenda}">${p.nome} (${p.volumetria} • Disp: ${p.quantidade})</option>`
+      ).join('');
+      document.getElementById('venda-qtd').value = '1';
+      document.getElementById('venda-obs').value = '';
+      document.getElementById('venda-baixar-estoque').checked = true;
+      syncVendaPrecoSugerido();
+      document.getElementById('modal-venda').classList.remove('hidden');
+    }
+
+    function syncVendaPrecoSugerido() {
+      const sel = document.getElementById('venda-produto-id');
+      const prod = state.produtos.find(p => p.id === sel.value);
+      if (prod) {
+        document.getElementById('venda-preco-unit').value = Number(prod.precoVenda || 0).toFixed(2);
+      }
+    }
+
+    function saveVendaModal(e) {
+      e.preventDefault();
+      const prodId = document.getElementById('venda-produto-id').value;
+      const qtd = parseInt(document.getElementById('venda-qtd').value, 10) || 0;
+      const precoUnit = parseFloat(document.getElementById('venda-preco-unit').value) || 0;
+      const obs = document.getElementById('venda-obs').value.trim();
+      const baixarEstoque = document.getElementById('venda-baixar-estoque').checked;
+
+      const prod = state.produtos.find(p => p.id === prodId);
+      if (!prod || qtd <= 0) return;
+
+      if (baixarEstoque) {
+        if (prod.quantidade < qtd) {
+          showToast(`Estoque insuficiente de "${prod.nome}" (${prod.quantidade} disponíveis).`, 'error');
+          return;
+        }
+        prod.quantidade -= qtd;
+      }
+
+      state.vendas.unshift({
+        id: 'venda-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        data: new Date().toISOString(),
+        produtoId: prod.id,
+        produtoNome: prod.nome,
+        volumetria: prod.volumetria,
+        quantidade: qtd,
+        valorUnitario: precoUnit,
+        custoUnitario: Number(prod.custoProducao || 0),
+        valorTotal: Number((qtd * precoUnit).toFixed(2)),
+        observacao: obs || 'Venda registrada'
+      });
+
+      saveState();
+      closeModal('modal-venda');
+      renderAll();
+      showToast('Venda registrada com sucesso!');
+    }
+
+    function removerVenda(vendaId) {
+      state.vendas = state.vendas.filter(v => v.id !== vendaId);
+      saveState();
+      renderAll();
+      showToast('Registro de venda removido.');
+    }
+
+    // --- 5. LISTA DE COMPRAS / REPOSIÇÃO ---
+    function getSugestaoCompra(ins) {
+      if (state.qtdComprasPlanejadas[ins.id] !== undefined) {
+        return Number(state.qtdComprasPlanejadas[ins.id]);
+      }
+      const alvo = ins.minimo > 0 ? ins.minimo * 2 : 10;
+      return Math.max(1, Math.ceil(alvo - ins.quantidade));
+    }
+
+    function updateQtdCompra(id, val) {
+      const num = Math.max(0, Number(val) || 0);
+      state.qtdComprasPlanejadas[id] = num;
+      saveState();
+      renderReposicao();
+    }
+
+    function renderReposicao() {
+      const insumosRepor = state.insumos.filter(i => i.quantidade <= i.minimo);
+      const tbody = document.getElementById('tabela-reposicao-body');
+      let orcamentoTotal = 0;
+
+      if (insumosRepor.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-wine-950/75">
+              <p class="font-serif text-xl font-bold text-wine-900">Estoque Abastecido!</p>
+              <p class="text-sm mt-1">Nenhum insumo está abaixo do estoque mínimo no momento.</p>
+            </td>
+          </tr>
+        `;
+        document.getElementById('orcamento-total-reposicao').textContent = formatBRL(0);
+        return;
+      }
+
+      tbody.innerHTML = insumosRepor.map(ins => {
+        const qtdComprar = getSugestaoCompra(ins);
+        const subtotal = qtdComprar * ins.custoUnitario;
+        orcamentoTotal += subtotal;
+        const status = getStatusInsumo(ins);
+
+        return `
+          <tr class="hover:bg-lavender-50/70 transition">
+            <td class="py-3.5 px-4">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-wine-950">${ins.nome}</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full border font-medium ${status.badgeClass}">${status.label}</span>
+              </div>
+              <p class="text-xs text-wine-950/75 mt-0.5">${ins.categoria}${ins.fornecedor ? ` • Fornecedor: <strong>${ins.fornecedor}</strong>` : ''}</p>
+            </td>
+            <td class="py-3.5 px-4 text-right text-xs">
+              <span class="font-bold text-rose-700">${formatNumber(ins.quantidade, ins.unidade)}</span>
+              <span class="text-wine-950/70 block">Mín: ${formatNumber(ins.minimo, ins.unidade)}</span>
+            </td>
+            <td class="py-3.5 px-4 text-right text-wine-950/80">
+              ${formatBRL(ins.custoUnitario)}/${ins.unidade}
+            </td>
+            <td class="py-3.5 px-4 text-center">
+              <div class="inline-flex items-center gap-1.5">
+                <input type="number" min="0" step="1" value="${qtdComprar}" onchange="updateQtdCompra('${ins.id}', this.value)" class="w-24 px-2.5 py-1.5 text-sm text-right font-semibold bg-lavender-50 border border-lavender-300 rounded-lg focus:outline-none focus:border-wine-800">
+                <span class="text-xs text-wine-950/75 font-medium">${ins.unidade}</span>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 text-right font-bold text-wine-950">
+              ${formatBRL(subtotal)}
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              <button onclick="openEntradaModal('${ins.id}', ${qtdComprar}, ${subtotal.toFixed(2)})" class="px-3 py-1.5 text-xs font-medium bg-wine-800 hover:bg-wine-900 text-white rounded-lg transition">
+                Dar Entrada
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('orcamento-total-reposicao').textContent = formatBRL(orcamentoTotal);
+    }
+
+    function copiarListaCompras() {
+      const insumosRepor = state.insumos.filter(i => i.quantidade <= i.minimo);
+      if (insumosRepor.length === 0) {
+        showToast('Não há itens na lista de reposição para copiar.', 'error');
+        return;
+      }
+
+      let total = 0;
+      let texto = `💜 *LISTA DE REPOSIÇÃO - ÉXOR PERFUMARIA*\n`;
+      texto += `Data: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+
+      insumosRepor.forEach((ins, idx) => {
+        const qtd = getSugestaoCompra(ins);
+        if (qtd > 0) {
+          const sub = qtd * ins.custoUnitario;
+          total += sub;
+          texto += `${idx + 1}. [${ins.categoria}] ${ins.nome} — *${qtd} ${ins.unidade}* (Est. ${formatBRL(sub)})${ins.fornecedor ? ` [Forn: ${ins.fornecedor}]` : ''}\n`;
+        }
+      });
+
+      texto += `\n🍷 *Orçamento Estimado Total:* ${formatBRL(total)}`;
+
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = texto;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Lista de compras copiada!');
+      } catch (err) {
+        showToast('Não foi possível copiar automaticamente.', 'error');
+      }
+      document.body.removeChild(tempTextArea);
+    }
+
+    // =========================================================================
+    // MODAIS E OPERAÇÕES CRUD
+    // =========================================================================
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function atualizarSugestaoSubtipo() {
+      const cat = document.getElementById('insumo-categoria').value;
+      const subInput = document.getElementById('insumo-subtipo');
+      const placeholders = {
+        'Matéria-prima': 'Ex: Óleos essenciais, Óleos vegetais, Resinas, Ervas',
+        'Bases': 'Ex: Álcool de cereais, Óleos vegetais base',
+        'Embalagens': 'Ex: Frascos, Válvulas, Tampas, Rótulos',
+        'Outros itens de produção': 'Ex: Filtros, Pipetas, Béqueres',
+        'Envio': 'Ex: Caixa de envio, Papel seda, Lacres'
+      };
+      subInput.placeholder = placeholders[cat] || '';
+    }
+
+    function toggleModoCusto() {
+      const modo = document.querySelector('input[name="modo-custo"]:checked').value;
+      const boxLote = document.getElementById('box-custo-lote');
+      const inputUnit = document.getElementById('insumo-custo-unit');
+      if (modo === 'lote') {
+        boxLote.classList.remove('opacity-50', 'pointer-events-none');
+        recalcInsumoForm();
+      } else {
+        boxLote.classList.add('opacity-50', 'pointer-events-none');
+        inputUnit.focus();
+      }
+    }
+
+    function recalcInsumoForm(fromUnit = false) {
+      const modo = document.querySelector('input[name="modo-custo"]:checked').value;
+      const qtd = parseFloat(document.getElementById('insumo-qtd').value) || 0;
+      const loteInput = document.getElementById('insumo-custo-lote');
+      const unitInput = document.getElementById('insumo-custo-unit');
+
+      if (modo === 'lote' && !fromUnit) {
+        const valorLote = parseFloat(loteInput.value) || 0;
+        if (qtd > 0 && valorLote >= 0) {
+          unitInput.value = (valorLote / qtd).toFixed(4);
+        }
+      } else if (fromUnit) {
+        const unitVal = parseFloat(unitInput.value) || 0;
+        if (qtd > 0) {
+          loteInput.value = (unitVal * qtd).toFixed(2);
+        }
+      }
+    }
+
+    function openInsumoModal(id = null) {
+      const form = document.getElementById('form-insumo');
+      form.reset();
+      document.getElementById('insumo-id').value = '';
+
+      if (id) {
+        const ins = state.insumos.find(i => i.id === id);
+        if (!ins) return;
+        document.getElementById('modal-insumo-title').textContent = 'Editar Insumo';
+        document.getElementById('insumo-id').value = ins.id;
+        document.getElementById('insumo-nome').value = ins.nome;
+        document.getElementById('insumo-categoria').value = ins.categoria;
+        document.getElementById('insumo-subtipo').value = ins.subtipo || '';
+        document.getElementById('insumo-unidade').value = ins.unidade;
+        document.getElementById('insumo-qtd').value = ins.quantidade;
+        document.getElementById('insumo-minimo').value = ins.minimo;
+        document.getElementById('insumo-custo-unit').value = ins.custoUnitario;
+        document.getElementById('insumo-custo-lote').value = (ins.quantidade * ins.custoUnitario).toFixed(2);
+        document.getElementById('insumo-fornecedor').value = ins.fornecedor || '';
+        document.querySelector('input[name="modo-custo"][value="unitario"]').checked = true;
+        toggleModoCusto();
+      } else {
+        document.getElementById('modal-insumo-title').textContent = 'Cadastrar Novo Insumo';
+        document.querySelector('input[name="modo-custo"][value="lote"]').checked = true;
+        toggleModoCusto();
+        atualizarSugestaoSubtipo();
+      }
+
+      document.getElementById('modal-insumo').classList.remove('hidden');
+    }
+
+    function saveInsumo(e) {
+      e.preventDefault();
+      const id = document.getElementById('insumo-id').value;
+      const nome = document.getElementById('insumo-nome').value.trim();
+      const categoria = document.getElementById('insumo-categoria').value;
+      const subtipo = document.getElementById('insumo-subtipo').value.trim();
+      const unidade = document.getElementById('insumo-unidade').value;
+      const quantidade = parseFloat(document.getElementById('insumo-qtd').value) || 0;
+      const minimo = parseFloat(document.getElementById('insumo-minimo').value) || 0;
+      const custoUnitario = parseFloat(document.getElementById('insumo-custo-unit').value) || 0;
+      const fornecedor = document.getElementById('insumo-fornecedor').value.trim();
+
+      if (id) {
+        const index = state.insumos.findIndex(i => i.id === id);
+        if (index !== -1) {
+          const antigo = state.insumos[index];
+          const novoValorAtual = quantidade * custoUnitario;
+          state.insumos[index] = {
+            ...antigo,
+            nome,
+            categoria,
+            subtipo,
+            unidade,
+            quantidade,
+            minimo,
+            custoUnitario,
+            totalInvestido: Math.max(antigo.totalInvestido || 0, novoValorAtual),
+            fornecedor
+          };
+          showToast('Insumo atualizado com sucesso!');
+        }
+      } else {
+        const valorInicial = quantidade * custoUnitario;
+        state.insumos.unshift({
+          id: 'ins-' + Date.now(),
+          nome,
+          categoria,
+          subtipo,
+          unidade,
+          quantidade,
+          minimo,
+          custoUnitario,
+          totalInvestido: valorInicial,
+          fornecedor
+        });
+        showToast('Novo insumo cadastrado!');
+      }
+
+      saveState();
+      closeModal('modal-insumo');
+      renderAll();
+    }
+
+    function confirmDeleteInsumo(id) {
+      const ins = state.insumos.find(i => i.id === id);
+      if (!ins) return;
+      document.getElementById('confirm-title').textContent = 'Excluir Insumo';
+      document.getElementById('confirm-message').textContent = `Deseja realmente excluir "${ins.nome}" do estoque?`;
+      const btnYes = document.getElementById('confirm-btn-yes');
+      btnYes.onclick = () => {
+        state.insumos = state.insumos.filter(i => i.id !== id);
+        delete state.qtdComprasPlanejadas[id];
+        saveState();
+        closeModal('modal-confirm');
+        renderAll();
+        showToast('Insumo excluído.');
+      };
+      document.getElementById('modal-confirm').classList.remove('hidden');
+    }
+
+    function openEntradaModal(id, qtdSugerida = '', valorSugerido = '') {
+      const ins = state.insumos.find(i => i.id === id);
+      if (!ins) return;
+      document.getElementById('entrada-insumo-id').value = ins.id;
+      document.getElementById('entrada-insumo-nome').textContent = ins.nome;
+      document.getElementById('entrada-estoque-atual').textContent = `Estoque atual: ${formatNumber(ins.quantidade, ins.unidade)} • Custo atual: ${formatBRL(ins.custoUnitario)}/${ins.unidade}`;
+      document.getElementById('entrada-unidade-label').textContent = ins.unidade;
+      document.getElementById('entrada-qtd').value = qtdSugerida;
+      document.getElementById('entrada-valor-total').value = valorSugerido;
+      document.getElementById('modal-entrada').classList.remove('hidden');
+    }
+
+    function saveEntradaCompra(e) {
+      e.preventDefault();
+      const id = document.getElementById('entrada-insumo-id').value;
+      const qtdComprada = parseFloat(document.getElementById('entrada-qtd').value) || 0;
+      const valorPago = parseFloat(document.getElementById('entrada-valor-total').value) || 0;
+
+      const ins = state.insumos.find(i => i.id === id);
+      if (!ins || qtdComprada <= 0) return;
+
+      const valorEstoqueAnterior = ins.quantidade * ins.custoUnitario;
+      const novaQuantidadeTotal = ins.quantidade + qtdComprada;
+      const novoCustoMedio = novaQuantidadeTotal > 0 ? (valorEstoqueAnterior + valorPago) / novaQuantidadeTotal : ins.custoUnitario;
+
+      ins.quantidade = novaQuantidadeTotal;
+      ins.custoUnitario = novoCustoMedio;
+      ins.totalInvestido = (ins.totalInvestido || valorEstoqueAnterior) + valorPago;
+
+      if (ins.quantidade > ins.minimo) {
+        delete state.qtdComprasPlanejadas[id];
+      }
+
+      saveState();
+      closeModal('modal-entrada');
+      renderAll();
+      showToast(`Entrada de ${formatNumber(qtdComprada, ins.unidade)} registrada!`);
+    }
+
+    function openProdutoModal(id = null) {
+      document.getElementById('produto-id').value = '';
+      document.getElementById('produto-nome').value = '';
+      document.getElementById('produto-concentracao').value = 'Eau de Parfum';
+      document.getElementById('produto-volumetria').value = '50ml';
+      document.getElementById('produto-qtd').value = '1';
+      document.getElementById('produto-custo').value = '';
+      document.getElementById('produto-preco').value = '';
+      document.getElementById('produto-notas').value = '';
+
+      if (id) {
+        const prod = state.produtos.find(p => p.id === id);
+        if (!prod) return;
+        document.getElementById('modal-produto-title').textContent = 'Editar Perfume';
+        document.getElementById('produto-id').value = prod.id;
+        document.getElementById('produto-nome').value = prod.nome;
+        document.getElementById('produto-concentracao').value = prod.concentracao;
+        document.getElementById('produto-volumetria').value = prod.volumetria;
+        document.getElementById('produto-qtd').value = prod.quantidade;
+        document.getElementById('produto-custo').value = prod.custoProducao;
+        document.getElementById('produto-preco').value = prod.precoVenda;
+        document.getElementById('produto-notas').value = prod.notas || '';
+      } else {
+        document.getElementById('modal-produto-title').textContent = 'Novo Perfume Pronta Entrega';
+      }
+
+      document.getElementById('modal-produto').classList.remove('hidden');
+    }
+
+    function saveProduto(e) {
+      e.preventDefault();
+      const id = document.getElementById('produto-id').value;
+      const nome = document.getElementById('produto-nome').value.trim();
+      const concentracao = document.getElementById('produto-concentracao').value;
+      const volumetria = document.getElementById('produto-volumetria').value.trim();
+      const quantidade = parseInt(document.getElementById('produto-qtd').value, 10) || 0;
+      const custoProducao = parseFloat(document.getElementById('produto-custo').value) || 0;
+      const precoVenda = parseFloat(document.getElementById('produto-preco').value) || 0;
+      const notas = document.getElementById('produto-notas').value.trim();
+
+      if (id) {
+        const idx = state.produtos.findIndex(p => p.id === id);
+        if (idx !== -1) {
+          const receitaExistente = state.produtos[idx].receita || [];
+          state.produtos[idx] = { id, nome, concentracao, volumetria, quantidade, custoProducao, precoVenda, notas, receita: receitaExistente };
+          showToast('Perfume atualizado!');
+        }
+      } else {
+        const novoId = 'prod-' + Date.now();
+        const receitaNova = precifState.produtoId === '' && precifState.itens.length > 0
+          ? JSON.parse(JSON.stringify(precifState.itens))
+          : [];
+        state.produtos.unshift({
+          id: novoId,
+          nome,
+          concentracao,
+          volumetria,
+          quantidade,
+          custoProducao,
+          precoVenda,
+          notas,
+          receita: receitaNova
+        });
+        if (receitaNova.length > 0) {
+          precifState.produtoId = novoId;
+        }
+        showToast('Perfume adicionado à pronta entrega!');
+      }
+
+      saveState();
+      closeModal('modal-produto');
+      renderAll();
+    }
+
+    function confirmDeleteProduto(id) {
+      const prod = state.produtos.find(p => p.id === id);
+      if (!prod) return;
+      document.getElementById('confirm-title').textContent = 'Excluir Perfume';
+      document.getElementById('confirm-message').textContent = `Deseja remover "${prod.nome}" da lista de pronta entrega?`;
+      const btnYes = document.getElementById('confirm-btn-yes');
+      btnYes.onclick = () => {
+        state.produtos = state.produtos.filter(p => p.id !== id);
+        if (precifState.produtoId === id) {
+          precifState.produtoId = '';
+          precifState.itens = [];
+        }
+        saveState();
+        closeModal('modal-confirm');
+        renderAll();
+        showToast('Perfume excluído.');
+      };
+      document.getElementById('modal-confirm').classList.remove('hidden');
+    }
+
+    // =========================================================================
+    // BACKUP JSON & RESET DE DADOS
+    // =========================================================================
+    function exportBackup() {
+      const dataStr = JSON.stringify(state, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dataHoje = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `exor-perfumaria-backup-${dataHoje}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Backup da Éxor Perfumaria exportado!');
+    }
+
+    function importBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported.insumos) && Array.isArray(imported.produtos)) {
+            state.insumos = imported.insumos;
+            state.produtos = imported.produtos;
+            state.qtdComprasPlanejadas = imported.qtdComprasPlanejadas || {};
+            saveState();
+            if (state.produtos.length > 0) {
+              carregarFichaTecnica(state.produtos[0].id);
+            }
+            renderAll();
+            showToast('Backup restaurado com sucesso!');
+          } else {
+            showToast('Arquivo JSON inválido.', 'error');
+          }
+        } catch (err) {
+          showToast('Erro ao ler o arquivo de backup.', 'error');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function openResetModal() {
+      document.getElementById('modal-reset').classList.remove('hidden');
+    }
+
+    function restaurarDadosExemplo() {
+      state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveState();
+      if (state.produtos.length > 0) {
+        carregarFichaTecnica(state.produtos[0].id);
+      }
+      closeModal('modal-reset');
+      renderAll();
+      showToast('Exemplos da Éxor Perfumaria restaurados!');
+    }
+
+    function limparTodosDados() {
+      state = { insumos: [], produtos: [], vendas: [], qtdComprasPlanejadas: {} };
+      precifState = { produtoId: '', itens: [] };
+      saveState();
+      closeModal('modal-reset');
+      renderAll();
+      showToast('Todos os registros foram limpos.');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      if (state.produtos.length > 0) {
+        carregarFichaTecnica(state.produtos[0].id);
+      }
+      renderAll();
+    });
+  </script>
+</body>
+</html>
